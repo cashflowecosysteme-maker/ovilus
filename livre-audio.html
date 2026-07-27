@@ -19,6 +19,7 @@ h1{font-family:'Cormorant Garamond',serif;font-size:clamp(24px,5vw,36px);font-we
 .item h3{font-family:'Space Grotesk',sans-serif;font-size:15px;color:#fff}
 .item audio{width:100%;outline:none}
 .empty{text-align:center;color:var(--t3);font-size:14px;padding:40px 10px;line-height:1.7}
+canvas#starry-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
 </style>
 </head>
 <body>
@@ -53,5 +54,7 @@ fetch('/api/library?token=' + encodeURIComponent(token))
 .catch(function(){ document.getElementById('list').innerHTML = '<div class="empty">Connexion impossible.</div>'; });
 function escapeHtml(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 </script>
+<canvas id="starry-canvas"></canvas>
+<script src="/js/starry-bg.js"></script>
 </body>
 </html>
