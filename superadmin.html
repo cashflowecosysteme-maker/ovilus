@@ -87,21 +87,13 @@ th{font-size:10px;color:var(--t3);text-transform:uppercase}
       <div class="sub">Change le modèle OpenRouter utilisé par l'Entité (mode "Phrase fluide"), sans redéploiement.</div>
       <div class="field">
         <label>Modèle Ovilus</label>
-        <select id="ovilusModelSelect">
-          <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet — roleplay riche</option>
-          <option value="z-ai/glm-5.2">GLM 5.2</option>
-          <option value="mistralai/mistral-small-3.2-24b-instruct">Mistral Small 3.2</option>
-          <option value="openai/gpt-4o">GPT-4o</option>
-        </select>
+        <input type="text" id="ovilusModelSelect" placeholder="ex: anthropic/claude-sonnet-5">
       </div>
       <div class="field">
         <label>Modèle NyXia / Léna (chat)</label>
-        <select id="chatModelSelect">
-          <option value="mistralai/mistral-small-3.2-24b-instruct">Mistral Small 3.2</option>
-          <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet</option>
-          <option value="z-ai/glm-5.2">GLM 5.2</option>
-        </select>
+        <input type="text" id="chatModelSelect" placeholder="ex: mistralai/mistral-small-3.2-24b-instruct">
       </div>
+      <div class="sub">Fonctionne avec n'importe quel identifiant OpenRouter (ou compatible AI/ML), peu importe le fournisseur — colle simplement le nom exact du modèle.</div>
       <button class="btn-primary" onclick="saveOvilusConfig()">Enregistrer</button>
       <div class="msg-ok" id="configMsg"></div>
     </div>
