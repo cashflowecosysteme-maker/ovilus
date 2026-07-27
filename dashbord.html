@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/FavIcon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portail Vibratoire Spirituel — NyXia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#0F1C3F; --bg2:#1A2554; --bg3:#2A3A6E;
+  --p:#7B5CFF; --p2:#5A6CFF; --p3:#4FA3FF; --glow:rgba(123,92,255,0.4);
+  --t:#FFFFFF; --t2:#D6D9F0; --t3:#8891B8;
+  --green:#00E676; --red:#FF4B6E; --gold:#F4C842;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Outfit',sans-serif;background:var(--bg1);color:var(--t2)}
+button{font-family:'Space Grotesk',sans-serif;cursor:pointer}
+input,textarea{font-family:'Outfit',sans-serif}
+
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 30% 20%, rgba(123,92,255,0.13) 0%, transparent 65%),
+             radial-gradient(ellipse 50% 40% at 70% 80%, rgba(79,163,255,0.07) 0%, transparent 60%);}
+
+.app{display:flex;height:100vh;position:relative;z-index:1}
+
+/* Sidebar */
+.sidebar{width:260px;flex-shrink:0;background:rgba(15,28,63,0.6);border-right:1px solid rgba(123,92,255,0.15);
+  backdrop-filter:blur(16px);display:flex;flex-direction:column;padding:20px 14px}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:8px 8px 20px}
+.sb-logo img{width:38px;height:38px;border-radius:50%;box-shadow:0 0 20px rgba(123,92,255,0.4)}
+.sb-logo b{font-family:'Space Grotesk',sans-serif;font-size:15px}
+.sb-welcome{font-size:12px;color:var(--t3);padding:0 8px 18px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;cursor:pointer;
+  color:var(--t3);font-size:14px;font-weight:600;border:1px solid transparent;margin-bottom:6px;transition:all .2s}
+.nav-item:hover{background:rgba(123,92,255,0.08);color:var(--t2)}
+.nav-item.active{background:rgba(123,92,255,0.16);color:var(--t);border-color:rgba(123,92,255,0.35);box-shadow:0 0 18px rgba(123,92,255,0.12)}
+.nav-icon{font-size:17px}
+.sb-footer{margin-top:auto;padding:10px 8px}
+.btn-logout{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,75,110,0.3);
+  background:rgba(255,75,110,0.08);color:var(--red);font-size:12px;font-weight:700}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.panel.active{display:flex}
+
+/* Chat */
+.chat-header{padding:18px 26px;border-bottom:1px solid rgba(123,92,255,0.12);display:flex;align-items:center;gap:12px}
+.chat-header img{width:44px;height:44px;border-radius:50%;box-shadow:0 0 20px rgba(123,92,255,0.35)}
+.chat-header .name{font-family:'Space Grotesk',sans-serif;font-size:17px;color:var(--t)}
+.chat-header .sub{font-size:12px;color:var(--t3)}
+.chat-messages{flex:1;overflow-y:auto;padding:24px 26px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:70%;padding:13px 16px;border-radius:16px;font-size:14px;line-height:1.55}
+.msg.bot{align-self:flex-start;background:rgba(26,37,84,0.65);border:1px solid rgba(123,92,255,0.18)}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff}
+.chat-input-row{display:flex;gap:10px;padding:16px 26px;border-top:1px solid rgba(123,92,255,0.12)}
+.chat-input-row input{flex:1;background:rgba(15,28,63,0.7);border:1px solid rgba(123,92,255,0.2);
+  border-radius:12px;color:var(--t);font-size:14px;padding:13px 16px;outline:none}
+.chat-input-row input:focus{border-color:rgba(123,92,255,0.55)}
+.btn-send{padding:0 22px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700}
+
+/* Léna panel */
+
+/* ═══════ OVILUS — appareil (panel autonome) ═══════ */
+.panel#panel-ovilus.active{display:flex}
+.ovilus-device{width:100%;max-width:380px;background:linear-gradient(160deg,#17122b 0%,#0c0a17 100%);
+  border:1px solid rgba(123,92,255,0.35);border-radius:28px;padding:22px 20px 26px;
+  box-shadow:0 0 60px rgba(123,92,255,0.25), inset 0 1px 0 rgba(255,255,255,0.05);position:relative}
+.ovilus-brand{text-align:center;font-family:'Space Grotesk',sans-serif;letter-spacing:4px;font-size:13px;
+  color:var(--gold);margin-bottom:14px}
+.ovilus-screen{background:#050308;border:1px solid rgba(123,92,255,0.3);border-radius:12px;
+  padding:20px 16px;min-height:100px;display:flex;align-items:center;justify-content:center;text-align:center;
+  box-shadow:inset 0 0 20px rgba(0,0,0,0.8)}
+.ovilus-screen-text{font-family:'Space Grotesk',sans-serif;color:var(--p3);font-size:17px;line-height:1.5;
+  text-shadow:0 0 10px rgba(79,163,255,0.6)}
+.ovilus-screen-text.lit{color:#c9b6ff;text-shadow:0 0 14px rgba(123,92,255,0.85)}
+.ovilus-status{text-align:center;font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-top:8px}
+
+.ovilus-mode{display:flex;gap:0;margin:16px 0 4px;border:1px solid rgba(123,92,255,0.25);border-radius:10px;overflow:hidden}
+.ovilus-mode button{flex:1;padding:9px;border:none;background:rgba(15,28,63,0.6);color:var(--t3);font-size:11px;font-weight:700}
+.ovilus-mode button.active{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff}
+
+.ovilus-crystal-wrap{display:flex;justify-content:center;margin:20px 0 14px}
+.ovilus-crystal{width:92px;height:92px;border-radius:50%;border:2px solid var(--gold);
+  background:radial-gradient(circle at 40% 35%, #b48cff, #4a2fb0 70%);
+  box-shadow:0 0 30px rgba(123,92,255,0.55), 0 0 60px rgba(123,92,255,0.25);
+  display:flex;align-items:center;justify-content:center;font-size:30px;border:none;color:#fff;
+  animation:crystalPulse 3s ease-in-out infinite}
+.ovilus-crystal.listening{animation:crystalListen .6s ease-in-out infinite}
+@keyframes crystalPulse{0%,100%{box-shadow:0 0 30px rgba(123,92,255,0.55),0 0 60px rgba(123,92,255,0.2)}50%{box-shadow:0 0 45px rgba(123,92,255,0.8),0 0 80px rgba(123,92,255,0.35)}}
+@keyframes crystalListen{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+.ovilus-question{text-align:center;font-size:12px;color:var(--t3);min-height:16px;margin-bottom:4px;padding:0 10px}
+.ovilus-type-row{display:flex;gap:8px;margin-top:6px}
+.ovilus-type-row input{flex:1;background:rgba(15,28,63,0.6);border:1px solid rgba(123,92,255,0.2);
+  border-radius:10px;color:var(--t);font-size:13px;padding:10px 12px;outline:none}
+.ovilus-type-row button{padding:0 16px;border-radius:10px;border:1px solid rgba(123,92,255,0.3);
+  background:rgba(123,92,255,0.12);color:var(--t2);font-size:12px;font-weight:700}
+
+.ovilus-log{margin-top:16px;max-height:110px;overflow-y:auto;font-size:11px}
+.ovilus-log-entry{color:var(--t3);padding:5px 0;border-bottom:1px dashed rgba(123,92,255,0.15)}
+.ovilus-log-entry b{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sb-logo"><img src="/NyXia.png" alt=""><b>NyXia</b></div>
+    <div class="sb-welcome">Bienvenue <strong id="header-username"></strong></div>
+
+    <div class="nav-item active" id="nav-nyxia" onclick="openTab('nyxia')">
+      <span class="nav-icon">✦</span> NyXia
+    </div>
+    <div class="nav-item" id="nav-lena" onclick="openTab('lena')">
+      <span class="nav-icon">🌙</span> Léna — Portail Spirituel
+    </div>
+    <div class="nav-item" id="nav-ovilus" onclick="openTab('ovilus')">
+      <span class="nav-icon">🔮</span> Ovilus
+    </div>
+
+    <div class="sb-footer">
+      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- NyXia -->
+    <div class="panel active" id="panel-nyxia">
+      <div class="chat-header"><img src="/NyXia.png" alt=""><div><div class="name">NyXia</div><div class="sub">Ton accompagnatrice</div></div></div>
+      <div class="chat-messages" id="messages-nyxia"></div>
+      <div class="chat-input-row">
+        <input type="text" id="input-nyxia" placeholder="Écris à NyXia…">
+        <button class="btn-send" onclick="sendMessage('nyxia')">Envoyer</button>
+      </div>
+    </div>
+
+    <!-- Léna -->
+    <div class="panel" id="panel-lena">
+      <div class="chat-header"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7B5CFF,#4FA3FF);display:flex;align-items:center;justify-content:center;font-size:20px">🌙</div><div><div class="name">Léna</div><div class="sub">Portail Vibratoire Spirituel</div></div></div>
+      <div class="chat-messages" id="messages-lena"></div>
+      <div class="chat-input-row">
+        <input type="text" id="input-lena" placeholder="Écris à Léna…">
+        <button class="btn-send" onclick="sendMessage('lena')">Envoyer</button>
+      </div>
+    </div>
+
+    <!-- Ovilus : espace autonome -->
+    <div class="panel" id="panel-ovilus" style="align-items:center;justify-content:center;overflow-y:auto;padding:30px 20px">
+      <div class="ovilus-device" style="margin:auto">
+        <div class="ovilus-brand">OVILUS · NYXIA</div>
+
+        <div class="ovilus-screen"><div class="ovilus-screen-text" id="ovilusScreen">— — —</div></div>
+        <div class="ovilus-status" id="ovilusStatus">En attente</div>
+
+        <div class="ovilus-mode">
+          <button id="modeMots" onclick="setOvilusMode('mots')">Mots distincts</button>
+          <button id="modeFluide" class="active" onclick="setOvilusMode('fluide')">Phrase fluide</button>
+        </div>
+
+        <div class="ovilus-crystal-wrap">
+          <button class="ovilus-crystal" id="ovilusCrystal" onclick="ovilusListen()">🎙</button>
+        </div>
+        <div class="ovilus-question" id="ovilusQuestion">Appuie sur le cristal et parle ta question</div>
+
+        <div class="ovilus-type-row">
+          <input type="text" id="ovilusTypedQuestion" placeholder="…ou écris-la ici">
+          <button onclick="ovilusConsult()">Consulter</button>
+        </div>
+
+        <div class="ovilus-log" id="ovilusLog"><div class="ovilus-log-entry">Aucune consultation.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var token = sessionStorage.getItem('nyxia_token');
+var username = localStorage.getItem('nyxia_username') || '';
+if(!token){ window.location.href = '/login.html'; }
+document.getElementById('header-username').textContent = username;
+
+var chatHistories = { nyxia: [], lena: [] };
+var greetings = {
+  nyxia: '✦ Bienvenue ' + (username||'') + '. Je suis NyXia, ton accompagnatrice. Sens-tu l\'appel du chemin spirituel aujourd\'hui ? Léna t\'attend pour t\'y guider. ✦',
+  lena: '🌙 Je suis Léna. Je t\'accompagne à travers tes dons, ta numérologie, ton tarot, tes runes — et l\'Ovilus, si tu souhaites consulter l\'invisible. Par où commençons-nous ? 🔮'
+};
+
+function openTab(agent){
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('nav-' + agent).classList.add('active');
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-' + agent).classList.add('active');
+  if(chatHistories[agent].length === 0){ addMessage(agent, 'bot', greetings[agent]); }
+}
+
+function addMessage(agent, role, text){
+  chatHistories[agent].push({ role: role === 'bot' ? 'assistant' : 'user', content: text });
+  var el = document.createElement('div');
+  el.className = 'msg ' + (role === 'bot' ? 'bot' : 'user');
+  el.textContent = text;
+  var container = document.getElementById('messages-' + agent);
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage(agent){
+  var input = document.getElementById('input-' + agent);
+  var text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  addMessage(agent, 'user', text);
+
+  fetch('/api/chat', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ message: text, history: chatHistories[agent].slice(0,-1), userName: username, agent: agent, token: token })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.content) addMessage(agent, 'bot', data.content);
+    else addMessage(agent, 'bot', 'Petite interruption... réessaie 💜');
+  })
+  .catch(function(){ addMessage(agent, 'bot', 'Erreur de connexion.'); });
+}
+
+document.addEventListener('DOMContentLoaded', function(){ openTab('nyxia'); });
+
+function logout(){
+  fetch('/api/logout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token }) })
+    .finally(function(){ sessionStorage.removeItem('nyxia_token'); window.location.href = '/login.html'; });
+}
+
+/* ═══════ OVILUS ═══════ */
+var ovilusMode = 'fluide';
+var ovilusBusy = false;
+
+function setOvilusMode(m){
+  ovilusMode = m;
+  document.getElementById('modeMots').classList.toggle('active', m==='mots');
+  document.getElementById('modeFluide').classList.toggle('active', m==='fluide');
+}
+
+function ovilusLog(text){
+  var log = document.getElementById('ovilusLog');
+  if(log.children.length === 1 && log.children[0].textContent.indexOf('Aucune') === 0) log.innerHTML = '';
+  var entry = document.createElement('div');
+  entry.className = 'ovilus-log-entry';
+  entry.innerHTML = '<b>' + text.replace(/</g,'&lt;') + '</b>';
+  log.prepend(entry);
+}
+
+function speakBrowser(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  var utter = new SpeechSynthesisUtterance(text);
+  var voices = window.speechSynthesis.getVoices();
+  var fr = voices.find(function(v){ return v.lang && v.lang.toLowerCase().indexOf('fr') === 0; });
+  if(fr) utter.voice = fr;
+  utter.lang = 'fr-FR';
+  window.speechSynthesis.speak(utter);
+}
+
+function ovilusConsult(){
+  if(ovilusBusy) return;
+  var typed = document.getElementById('ovilusTypedQuestion');
+  var question = typed.value.trim();
+  if(!question){ document.getElementById('ovilusStatus').textContent = 'Pose une question d\'abord'; return; }
+  typed.value = '';
+  ovilusBusy = true;
+  document.getElementById('ovilusStatus').textContent = 'Consultation…';
+
+  fetch('/api/ovilus/consult', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ question: question, mode: ovilusMode, token: token })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    ovilusBusy = false;
+    var screen = document.getElementById('ovilusScreen');
+    if(data.response){
+      screen.textContent = data.response;
+      screen.classList.add('lit');
+      document.getElementById('ovilusStatus').textContent = 'Réponse captée';
+      ovilusLog(data.response);
+      speakBrowser(data.response);
+    } else {
+      document.getElementById('ovilusStatus').textContent = data.error || 'Erreur';
+    }
+  })
+  .catch(function(){ ovilusBusy = false; document.getElementById('ovilusStatus').textContent = 'Erreur de connexion'; });
+}
+
+var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+var recognition = null;
+if(SpeechRecognitionCtor){
+  recognition = new SpeechRecognitionCtor();
+  recognition.lang = 'fr-FR';
+  recognition.interimResults = false;
+  recognition.onresult = function(e){
+    var transcript = e.results[0][0].transcript;
+    document.getElementById('ovilusQuestion').textContent = '« ' + transcript + ' »';
+    document.getElementById('ovilusTypedQuestion').value = transcript;
+    ovilusConsult();
+  };
+  recognition.onend = function(){ document.getElementById('ovilusCrystal').classList.remove('listening'); };
+  recognition.onerror = function(){
+    document.getElementById('ovilusCrystal').classList.remove('listening');
+    document.getElementById('ovilusStatus').textContent = 'Micro indisponible';
+  };
+}
+function ovilusListen(){
+  if(!recognition){ document.getElementById('ovilusStatus').textContent = 'Dictée non supportée — écris ta question'; return; }
+  document.getElementById('ovilusCrystal').classList.add('listening');
+  document.getElementById('ovilusStatus').textContent = 'Écoute…';
+  try{ recognition.start(); }catch(e){}
+}
+</script>
+</body>
+</html>

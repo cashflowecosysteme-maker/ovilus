@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/FavIcon.png">
+<title>NyXia · Super Admin — Portail Spirituel</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#0F1C3F;--bg2:#1A2554;--bg3:#2A3A6E;--p:#7B5CFF;--p2:#5A6CFF;--p3:#4FA3FF;--t:#FFFFFF;--t2:#D6D9F0;--t3:#8891B8;--green:#00E676;--red:#ff6b6b;--gold:#F4C842}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg1);color:var(--t);min-height:100vh}
+button{font-family:'Space Grotesk',sans-serif;cursor:pointer}
+input,select{font-family:'Outfit',sans-serif}
+
+.login-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg1)}
+.login-gate.hidden{display:none}
+.login-card{width:100%;max-width:400px;margin:20px;background:var(--bg2);border:1px solid rgba(123,92,255,0.25);border-radius:24px;padding:36px}
+.login-card h2{font-family:'Orbitron',monospace;font-size:18px;text-align:center;margin-bottom:20px;background:linear-gradient(135deg,#a78bfa,var(--p3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-card input{width:100%;padding:13px 16px;border-radius:12px;border:1px solid rgba(123,92,255,0.25);background:rgba(15,28,63,0.7);color:var(--t);font-size:15px;outline:none;margin-bottom:16px}
+.login-card button{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700;font-size:15px}
+.login-error{margin-top:14px;padding:10px;border-radius:10px;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.3);color:var(--red);font-size:13px;text-align:center;display:none}
+
+.admin-panel{display:none}
+.admin-panel.visible{display:block}
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:rgba(15,28,63,0.9);border-bottom:1px solid rgba(123,92,255,0.2)}
+.header h1{font-family:'Orbitron',monospace;font-size:17px}
+.btn-logout{padding:8px 16px;border-radius:8px;border:1px solid rgba(255,82,82,0.3);background:rgba(255,82,82,0.1);color:var(--red);font-size:12px;font-weight:700}
+
+.main{max-width:900px;margin:0 auto;padding:24px}
+.panel{background:rgba(26,37,84,0.5);border:1px solid rgba(123,92,255,0.15);border-radius:16px;padding:22px;margin-bottom:20px}
+.panel h2{font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:14px}
+.panel .sub{font-size:12px;color:var(--t3);margin-bottom:16px}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{padding:11px 13px;border-radius:10px;border:1px solid rgba(123,92,255,0.2);background:rgba(15,28,63,0.6);color:var(--t);font-size:14px;outline:none}
+.row{display:flex;gap:10px}
+.row .field{flex:1}
+.btn-primary{padding:12px 22px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700;font-size:13px}
+.btn-danger{padding:8px 14px;border-radius:8px;border:1px solid rgba(255,82,82,0.3);background:rgba(255,82,82,0.1);color:var(--red);font-size:12px;font-weight:700}
+
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(123,92,255,0.1);font-size:13px}
+th{font-size:10px;color:var(--t3);text-transform:uppercase}
+
+.chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:flex;align-items:center;gap:6px;background:rgba(15,28,63,0.6);border:1px solid rgba(123,92,255,0.2);border-radius:20px;padding:5px 6px 5px 12px;font-size:12px}
+.chip button{all:unset;cursor:pointer;color:var(--red);padding:2px 6px}
+.msg-ok{color:var(--green);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="login-gate" id="loginGate">
+  <div class="login-card">
+    <h2>SUPER ADMIN — SPIRITUEL</h2>
+    <input type="password" id="adminPassword" placeholder="Mot de passe admin">
+    <button onclick="adminLogin()">Se connecter</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="admin-panel" id="adminPanel">
+  <div class="header"><h1>Super Admin — Portail Vibratoire Spirituel</h1><button class="btn-logout" onclick="location.reload()">Déconnexion</button></div>
+
+  <div class="main">
+
+    <div class="panel">
+      <h2>Clientes</h2>
+      <div class="sub">Créer un accès pour une nouvelle cliente du Portail Léna / Ovilus.</div>
+      <div class="row">
+        <div class="field"><label>Prénom</label><input id="newFirstName"></div>
+        <div class="field"><label>Nom</label><input id="newLastName"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Email</label><input id="newEmail" type="email"></div>
+        <div class="field"><label>Mot de passe</label><input id="newPassword" type="text"></div>
+      </div>
+      <button class="btn-primary" onclick="createClient()">Créer l'accès</button>
+      <div class="msg-ok" id="clientMsg"></div>
+      <table id="clientsTable"><thead><tr><th>Nom</th><th>Email</th><th>Créée le</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="panel">
+      <h2>Ovilus — Modèle IA</h2>
+      <div class="sub">Change le modèle OpenRouter utilisé par l'Entité (mode "Phrase fluide"), sans redéploiement.</div>
+      <div class="field">
+        <label>Modèle Ovilus</label>
+        <select id="ovilusModelSelect">
+          <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet — roleplay riche</option>
+          <option value="z-ai/glm-5.2">GLM 5.2</option>
+          <option value="mistralai/mistral-small-3.2-24b-instruct">Mistral Small 3.2</option>
+          <option value="openai/gpt-4o">GPT-4o</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Modèle NyXia / Léna (chat)</label>
+        <select id="chatModelSelect">
+          <option value="mistralai/mistral-small-3.2-24b-instruct">Mistral Small 3.2</option>
+          <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet</option>
+          <option value="z-ai/glm-5.2">GLM 5.2</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="saveOvilusConfig()">Enregistrer</button>
+      <div class="msg-ok" id="configMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Ovilus — Banque de mots (mode "Mots distincts")</h2>
+      <div class="row">
+        <div class="field" style="flex:1"><input id="newMot" placeholder="Ajouter un mot…"></div>
+        <button class="btn-primary" onclick="addMot()">Ajouter</button>
+      </div>
+      <div class="chip-list" id="motsChips"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Ovilus — Banque de prénoms (mode "Phrase fluide")</h2>
+      <div class="sub">Un JSON — féminins et masculins, mélange d'époques 1700–2026.</div>
+      <div class="field"><label>Prénoms féminins (séparés par virgule)</label><input id="prenomsFem"></div>
+      <div class="field"><label>Prénoms masculins (séparés par virgule)</label><input id="prenomsMasc"></div>
+      <button class="btn-primary" onclick="savePrenoms()">Enregistrer</button>
+      <div class="msg-ok" id="prenomsMsg"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var adminToken = null;
+
+function adminLogin(){
+  var pw = document.getElementById('adminPassword').value;
+  fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw }) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.success){
+      adminToken = data.token;
+      document.getElementById('loginGate').classList.add('hidden');
+      document.getElementById('adminPanel').classList.add('visible');
+      loadClients(); loadOvilusConfig(); loadMots(); loadPrenoms();
+    } else {
+      var err = document.getElementById('loginError');
+      err.textContent = data.error || 'Mot de passe incorrect.';
+      err.style.display = 'block';
+    }
+  });
+}
+
+function authHeaders(){ return { 'Content-Type':'application/json', 'X-Admin-Token': adminToken }; }
+
+function loadClients(){
+  fetch('/api/admin/clients', { headers: authHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var tbody = document.querySelector('#clientsTable tbody');
+    tbody.innerHTML = '';
+    (data.clients||[]).forEach(function(c){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (c.name||'') + '</td><td>' + c.email + '</td><td>' + (c.createdAt||'').slice(0,10) + '</td><td></td>';
+      var td = tr.lastElementChild;
+      var del = document.createElement('button');
+      del.className = 'btn-danger'; del.textContent = 'Supprimer';
+      del.onclick = function(){ deleteClient(c.email); };
+      td.appendChild(del);
+      tbody.appendChild(tr);
+    });
+  });
+}
+function createClient(){
+  var body = {
+    firstName: document.getElementById('newFirstName').value,
+    lastName: document.getElementById('newLastName').value,
+    email: document.getElementById('newEmail').value,
+    password: document.getElementById('newPassword').value
+  };
+  fetch('/api/admin/clients', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    document.getElementById('clientMsg').textContent = data.success ? '✓ Accès créé.' : (data.error||'Erreur');
+    if(data.success){ loadClients(); ['newFirstName','newLastName','newEmail','newPassword'].forEach(function(id){ document.getElementById(id).value=''; }); }
+  });
+}
+function deleteClient(email){
+  fetch('/api/admin/clients/delete', { method:'POST', headers: authHeaders(), body: JSON.stringify({ email: email }) })
+  .then(function(){ loadClients(); });
+}
+
+function loadOvilusConfig(){
+  fetch('/api/admin/ovilus/config', { headers: authHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.ovilusModel) document.getElementById('ovilusModelSelect').value = data.ovilusModel;
+    if(data.chatModel) document.getElementById('chatModelSelect').value = data.chatModel;
+  });
+}
+function saveOvilusConfig(){
+  var body = { ovilusModel: document.getElementById('ovilusModelSelect').value, chatModel: document.getElementById('chatModelSelect').value };
+  fetch('/api/admin/ovilus/config', { method:'POST', headers: authHeaders(), body: JSON.stringify(body) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){ document.getElementById('configMsg').textContent = data.success ? '✓ Enregistré.' : (data.error||'Erreur'); });
+}
+
+function loadMots(){
+  fetch('/api/admin/ovilus/mots', { headers: authHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){ renderMots(data.mots||[]); });
+}
+function renderMots(mots){
+  var el = document.getElementById('motsChips');
+  el.innerHTML = '';
+  mots.forEach(function(w, i){
+    var chip = document.createElement('div'); chip.className = 'chip';
+    chip.innerHTML = '<span>' + w + '</span>';
+    var del = document.createElement('button'); del.textContent = '✕';
+    del.onclick = function(){
+      fetch('/api/admin/ovilus/mots', { method:'DELETE', headers: authHeaders(), body: JSON.stringify({ index: i }) })
+      .then(function(r){ return r.json(); }).then(function(data){ renderMots(data.mots||[]); });
+    };
+    chip.appendChild(del);
+    el.appendChild(chip);
+  });
+}
+function addMot(){
+  var input = document.getElementById('newMot');
+  var v = input.value.trim();
+  if(!v) return;
+  input.value = '';
+  fetch('/api/admin/ovilus/mots', { method:'POST', headers: authHeaders(), body: JSON.stringify({ word: v }) })
+  .then(function(r){ return r.json(); }).then(function(data){ renderMots(data.mots||[]); });
+}
+
+function loadPrenoms(){
+  fetch('/api/admin/ovilus/prenoms', { headers: authHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var p = data.prenoms || { feminins: [], masculins: [] };
+    document.getElementById('prenomsFem').value = p.feminins.join(', ');
+    document.getElementById('prenomsMasc').value = p.masculins.join(', ');
+  });
+}
+function savePrenoms(){
+  var fem = document.getElementById('prenomsFem').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  var masc = document.getElementById('prenomsMasc').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  fetch('/api/admin/ovilus/prenoms', { method:'POST', headers: authHeaders(), body: JSON.stringify({ feminins: fem, masculins: masc }) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){ document.getElementById('prenomsMsg').textContent = data.success ? '✓ Enregistré.' : (data.error||'Erreur'); });
+}
+</script>
+</body>
+</html>
