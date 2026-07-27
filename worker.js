@@ -316,14 +316,14 @@ async function handleTTS(request, env) {
   // ── Voie 1 : HeyGen ──
   const voiceIdKey = AGENT_VOICE_ID_KEYS[agent];
   const heygenVoiceId = voiceIdKey ? env[voiceIdKey] : null;
-  if (heygenVoiceId && env.HeyGen_KEY) {
+  if (heygenVoiceId && env.HEYGEN_API_KEY) {
     const cacheKey = 'tts_cache:' + agent + ':' + (await sha256Hex(cleanText));
     const cachedUrl = await env.SPIRITUEL_KV.get(cacheKey);
     if (cachedUrl) return json({ success: true, proxyUrl: cachedUrl, cached: true });
 
     const resp = await fetch('https://api.heygen.com/v3/voices/speech', {
       method: 'POST',
-      headers: { 'X-Api-Key': env.HeyGen_KEY, 'Content-Type': 'application/json' },
+      headers: { 'X-Api-Key': env.HEYGEN_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: cleanText, voice_id: heygenVoiceId })
     });
     if (resp.ok) {
@@ -338,14 +338,14 @@ async function handleTTS(request, env) {
 
   // ── Voie 2 : OpenAI (voix distincte pour Léna) ──
   const openaiVoice = OPENAI_VOICE_MAP[agent];
-  if (openaiVoice && env['OpenAi_KEY']) {
+  if (openaiVoice && env.OpenAi_KEY) {
     const cacheKey = 'tts_cache_openai:' + agent + ':' + openaiVoice + ':' + (await sha256Hex(cleanText));
     const cachedBuf = await env.SPIRITUEL_KV.get(cacheKey, 'arrayBuffer');
     if (cachedBuf) return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token), cached: true });
 
     const resp = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + env['OpenAi_KEY'], 'Content-Type': 'application/json' },
+      headers: { 'Authorization': 'Bearer ' + env.OpenAi_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'tts-1', voice: openaiVoice, input: cleanText, response_format: 'mp3' })
     });
     if (resp.ok) {
