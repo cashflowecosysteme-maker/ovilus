@@ -20,6 +20,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg1);color:var(--t2)}
 button{font-family:'Space Grotesk',sans-serif;cursor:pointer}
 input,textarea{font-family:'Outfit',sans-serif}
 
+canvas#starry-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 60% 50% at 30% 20%, rgba(123,92,255,0.13) 0%, transparent 65%),
              radial-gradient(ellipse 50% 40% at 70% 80%, rgba(79,163,255,0.07) 0%, transparent 60%);}
@@ -60,6 +62,9 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .chat-input-row input{flex:1;background:rgba(15,28,63,0.7);border:1px solid rgba(123,92,255,0.2);
   border-radius:12px;color:var(--t);font-size:14px;padding:13px 16px;outline:none}
 .chat-input-row input:focus{border-color:rgba(123,92,255,0.55)}
+.btn-mic{flex-shrink:0;width:44px;height:44px;border-radius:12px;border:1px solid rgba(123,92,255,0.2);
+  background:rgba(123,92,255,0.06);color:var(--t3);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;transition:all .2s}
 .btn-send{padding:0 22px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700}
 
 /* Léna panel */
@@ -145,6 +150,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 </style>
 </head>
 <body>
+<canvas id="starry-canvas"></canvas>
 
 <div class="app">
   <div class="sidebar">
@@ -175,6 +181,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="chat-header"><img src="/NyXia.png" alt=""><div><div class="name">NyXia</div><div class="sub">Ton accompagnatrice</div></div></div>
       <div class="chat-messages" id="messages-nyxia"></div>
       <div class="chat-input-row">
+        <button id="btn-mic-nyxia" class="btn-mic" onclick="toggleMic('nyxia')" title="Parler">🎤</button>
         <input type="text" id="input-nyxia" placeholder="Écris à NyXia…">
         <button class="btn-send" onclick="sendMessage('nyxia')">Envoyer</button>
       </div>
@@ -185,6 +192,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="chat-header"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7B5CFF,#4FA3FF);display:flex;align-items:center;justify-content:center;font-size:20px">🌙</div><div><div class="name">Léna</div><div class="sub">Portail Vibratoire Spirituel</div></div></div>
       <div class="chat-messages" id="messages-lena"></div>
       <div class="chat-input-row">
+        <button id="btn-mic-lena" class="btn-mic" onclick="toggleMic('lena')" title="Parler">🎤</button>
         <input type="text" id="input-lena" placeholder="Écris à Léna…">
         <button class="btn-send" onclick="sendMessage('lena')">Envoyer</button>
       </div>
@@ -255,6 +263,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   </div>
 </div>
 
+<script src="/js/starry-bg.js" defer></script>
 <script>
 var token = sessionStorage.getItem('nyxia_token');
 var username = localStorage.getItem('nyxia_username') || '';
@@ -354,6 +363,54 @@ function sendMessage(agent){
   if(!text) return;
   input.value = '';
   sendMessageText(agent, text);
+}
+
+/* ═══════ Dictée vocale (parler → texte) — même mécanisme que Kael dans l'original ═══════ */
+var _micRecognition = null, _micListening = false, _micAgent = null;
+
+function toggleMic(agent){
+  var SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognitionAPI){
+    alert("La reconnaissance vocale n'est pas disponible sur ce navigateur. Essaie avec Chrome ou Edge.");
+    return;
+  }
+  var btn = document.getElementById('btn-mic-' + agent);
+  if(_micListening){
+    if(_micRecognition) _micRecognition.stop();
+    return;
+  }
+  _micAgent = agent;
+  _micRecognition = new SpeechRecognitionAPI();
+  _micRecognition.lang = 'fr-FR';
+  _micRecognition.interimResults = false;
+  _micRecognition.maxAlternatives = 1;
+
+  _micRecognition.onstart = function(){
+    _micListening = true;
+    btn.textContent = '⏹';
+    btn.style.background = 'rgba(255,75,110,0.15)';
+    btn.style.borderColor = 'rgba(255,75,110,0.4)';
+    btn.style.color = '#ff4b6e';
+  };
+  _micRecognition.onresult = function(event){
+    var transcript = event.results[0][0].transcript;
+    document.getElementById('input-' + agent).value = transcript;
+    sendMessage(agent);
+  };
+  _micRecognition.onerror = function(){ resetMicBtn(); };
+  _micRecognition.onend = function(){ resetMicBtn(); };
+  _micRecognition.start();
+}
+
+function resetMicBtn(){
+  _micListening = false;
+  if(!_micAgent) return;
+  var btn = document.getElementById('btn-mic-' + _micAgent);
+  if(!btn) return;
+  btn.textContent = '🎤';
+  btn.style.background = 'rgba(123,92,255,0.06)';
+  btn.style.borderColor = 'rgba(123,92,255,0.2)';
+  btn.style.color = 'var(--t3)';
 }
 
 /* ═══════ TTS (Écouter) — même structure que Gardienne : serveur (ElevenLabs/HeyGen/OpenAI) avec repli navigateur ═══════ */
