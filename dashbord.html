@@ -783,6 +783,15 @@ function escHtml(str){ var d = document.createElement('div'); d.textContent = st
 
 document.addEventListener('DOMContentLoaded', function(){ openTab('nyxia'); });
 
+// Les pages (tirages, journal) peuvent lancer une conversation avec NyXia via postMessage
+window.addEventListener('message', function(e){
+  var d = e.data;
+  if(d && d.type === 'nyxia_suggest' && d.text){
+    openTab('nyxia');
+    sendMessageText('nyxia', String(d.text).slice(0, 1500));
+  }
+});
+
 function logout(){
   fetch('/api/logout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token }) })
     .finally(function(){ sessionStorage.removeItem('nyxia_token'); window.location.href = '/login.html'; });
