@@ -361,8 +361,28 @@ function clearStage(agent){
 }
 var greetings = {
   nyxia: '✦ Bienvenue ' + (username||'') + '. Je suis NyXia, ton accompagnatrice. Sens-tu l\'appel du chemin spirituel aujourd\'hui ? Léna t\'attend pour t\'y guider. ✦',
-  lena: '🌙 Je suis Léna. Je t\'accompagne à travers tes dons, ta numérologie, ton tarot, tes runes — et l\'Ovilus, si tu souhaites consulter l\'invisible. Par où commençons-nous ? 🔮'
+  lena: '🌙 Allô ' + (username ? username + ' ' : '') + 'moi je suis Léna. Je t\'accompagne à travers ce portail Spirituel et vibratoire.'
 };
+
+// Vidéo d'accueil de Léna — déclenchée UNE fois par session à la première ouverture du chat.
+// (Dépose ton fichier à ce chemin ; s'il est absent, rien de cassé ne s'affiche.)
+var LENA_WELCOME_VIDEO = '/VideoBienvenueLena.mp4';
+function addVideoMessage(agent, videoUrl){
+  var container = document.getElementById('messages-' + agent);
+  if(!container) return;
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'border-radius:14px;overflow:hidden;max-width:320px;background:#000;align-self:flex-start';
+  var video = document.createElement('video');
+  video.src = videoUrl;
+  video.controls = true;
+  video.playsInline = true;
+  video.style.cssText = 'width:100%;display:block';
+  video.onerror = function(){ wrap.remove(); }; // vidéo absente → on n'affiche pas de lecteur cassé
+  wrap.appendChild(video);
+  container.appendChild(wrap);
+  container.scrollTop = container.scrollHeight;
+  video.play().catch(function(){ /* autoplay bloqué par le navigateur : la lectrice clique play */ });
+}
 
 function setOvilusDeviceType(type){
   var phoneBtn = document.getElementById('deviceTypePhone');
@@ -394,7 +414,16 @@ function openTab(agent){
   document.getElementById('nav-' + agent).classList.add('active');
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
   document.getElementById('panel-' + agent).classList.add('active');
-  if(chatHistories[agent] && chatHistories[agent].length === 0){ addMessage(agent, 'bot', greetings[agent]); }
+  if(chatHistories[agent] && chatHistories[agent].length === 0){
+    if(agent === 'lena' && LENA_WELCOME_VIDEO){
+      var vk = 'lena_video_seen_' + token; // clé liée au token : nouvelle session = nouvelle connexion = la vidéo rejoue
+      if(!sessionStorage.getItem(vk)){
+        addVideoMessage('lena', LENA_WELCOME_VIDEO);
+        sessionStorage.setItem(vk, '1');
+      }
+    }
+    addMessage(agent, 'bot', greetings[agent]);
+  }
   if(agent === 'spiritbox'){
     var frame = document.getElementById('spiritboxFrame');
     if(frame && (!frame.getAttribute('src') || frame.getAttribute('src') === '')){
