@@ -366,16 +366,27 @@ function speakMsg(btn, text, agent){
   btn._speaking = true; btn.textContent = '⏳ Un instant…';
 
   fetch('/api/tts/nyxia', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token, text: clean, agent: agent }) })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(!data.success || !data.proxyUrl) throw new Error('no_server_voice');
-    var audio = new Audio(data.proxyUrl);
+  .then(function(r){ return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
+  .then(function(res){
+    if(!res.ok || !res.data.success || !res.data.proxyUrl){
+      var msg = (res.data && res.data.error) ? res.data.error : 'Erreur ElevenLabs inconnue.';
+      if(agent === 'nyxia'){
+        stopSpeakBtn(btn);
+        alert('Voix de NyXia indisponible : ' + msg);
+        return;
+      }
+      throw new Error(msg);
+    }
+    var audio = new Audio(res.data.proxyUrl);
     btn._audio = audio;
     btn.textContent = '⏹ Arrêter';
     audio.play();
     audio.onended = audio.onerror = function(){ stopSpeakBtn(btn); };
   })
-  .catch(function(){ speakViaBrowser(btn, clean); });
+  .catch(function(){
+    if(agent === 'nyxia'){ stopSpeakBtn(btn); return; } // jamais de repli navigateur pour NyXia
+    speakViaBrowser(btn, clean);
+  });
 }
 function speakViaBrowser(btn, clean){
   if(!window.speechSynthesis){ stopSpeakBtn(btn); return; }
