@@ -29,6 +29,7 @@ h1{font-family:'Cormorant Garamond',serif;font-size:clamp(24px,5vw,36px);font-we
 .pages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:16px}
 .pages canvas{max-width:100%;border-radius:6px;box-shadow:0 4px 30px rgba(0,0,0,0.5)}
 .loadmsg{color:var(--t3);font-size:13px;padding:20px}
+canvas#starry-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
 </style>
 </head>
 <body>
@@ -103,5 +104,7 @@ function openBook(b){
 function closeReader(){ document.getElementById('reader').classList.remove('on'); document.getElementById('pages').innerHTML=''; }
 function escapeHtml(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 </script>
+<canvas id="starry-canvas"></canvas>
+<script src="/js/starry-bg.js"></script>
 </body>
 </html>
