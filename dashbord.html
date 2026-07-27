@@ -108,45 +108,6 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .ovilus-log{margin-top:16px;max-height:110px;overflow-y:auto;font-size:11px}
 .ovilus-log-entry{color:var(--t3);padding:5px 0;border-bottom:1px dashed rgba(123,92,255,0.15)}
 .ovilus-log-entry b{color:var(--gold)}
-
-/* ═══════ JOURNAL SPIRITUEL ═══════ */
-#panel-journal{padding:0;overflow:hidden}
-#panel-journal.active{display:flex}
-.journal-scene{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.journal-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 40% 50%, rgba(50,15,110,0.55) 0%, transparent 70%),radial-gradient(ellipse 50% 40% at 80% 20%, rgba(30,10,80,0.3) 0%, transparent 60%),#0a0e22}
-.journal-particles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
-.journal-particle{position:absolute;border-radius:50%;opacity:0;animation:journalFloatUp linear infinite}
-@keyframes journalFloatUp{0%{opacity:0;transform:translateY(0) scale(0)}10%{opacity:0.5}90%{opacity:0.15}100%{opacity:0;transform:translateY(-100%) scale(1.5)}}
-.journal-content{position:relative;z-index:2;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:row-reverse}
-.journal-nyxia-side{position:relative;flex-shrink:0;width:280px;height:100%;display:flex;align-items:center;justify-content:center}
-.journal-nyxia-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;background:radial-gradient(ellipse 70% 80% at 50% 50%, rgba(100,60,200,0.5) 0%, rgba(123,92,255,0.25) 35%, rgba(60,20,120,0.1) 60%, transparent 75%);filter:blur(28px);animation:journalGlowPulse 3.5s ease-in-out infinite;z-index:1}
-@keyframes journalGlowPulse{0%,100%{opacity:0.75;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
-.journal-nyxia-floor-glow{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);width:180px;height:24px;background:radial-gradient(ellipse 100% 100% at 50% 50%, rgba(100,60,200,0.5), transparent 70%);filter:blur(14px);border-radius:50%;z-index:0;animation:journalGlowPulse 3.5s ease-in-out infinite}
-.journal-nyxia-img{position:relative;z-index:2;width:190px;height:190px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 0 40px rgba(100,60,200,0.55)) drop-shadow(0 0 80px rgba(123,92,255,0.2));animation:journalNyxiaFloat 4.5s ease-in-out infinite}
-@keyframes journalNyxiaFloat{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}
-.journal-text-side{flex:1;max-width:420px;padding:0 40px}
-.journal-eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--p3);margin-bottom:14px;opacity:0.85}
-.journal-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,42px);font-weight:600;line-height:1.15;color:#fff;margin-bottom:14px}
-.journal-title em{font-style:italic;background:linear-gradient(135deg,#c4b5fd,var(--p3),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.journal-subtitle{font-size:14px;color:rgba(214,217,240,0.65);line-height:1.75;margin-bottom:30px;font-weight:400;max-width:360px}
-.journal-btn-glass{position:relative;display:inline-flex;align-items:center;gap:12px;padding:15px 30px;border-radius:60px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:#fff;cursor:pointer;border:1px solid rgba(163,139,250,0.35);background:rgba(100,60,200,0.14);backdrop-filter:blur(20px) saturate(1.5);box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 8px 32px rgba(0,0,0,0.3),0 0 40px rgba(100,60,200,0.2);transition:all .35s cubic-bezier(0.22,1,0.36,1);overflow:hidden}
-.journal-btn-glass:hover{background:rgba(100,60,200,0.24);border-color:rgba(196,181,253,0.6);box-shadow:0 0 0 4px rgba(100,60,200,0.12),0 0 60px rgba(100,60,200,0.5);transform:translateY(-2px)}
-.journal-btn-icon{font-size:18px;filter:drop-shadow(0 0 8px rgba(196,181,253,0.9))}
-.journal-btn-text-wrap{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
-.journal-btn-label{font-size:14px;font-weight:600}
-.journal-btn-sub{font-size:10.5px;font-weight:400;color:rgba(214,217,240,0.6)}
-.journal-btn-arrow{margin-left:auto;font-size:16px;opacity:0.6;transition:transform .3s ease}
-.journal-btn-glass:hover .journal-btn-arrow{transform:translateX(4px)}
-.journal-badge-wrap{display:flex;align-items:center;gap:10px;margin-top:20px}
-.journal-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:50px;font-size:10.5px;font-weight:500;color:rgba(214,217,240,0.6);border:1px solid rgba(100,60,200,0.2);background:rgba(100,60,200,0.07)}
-.journal-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--dot-color,#a78bfa);flex-shrink:0}
-@media(max-width:760px){
-  .journal-content{flex-direction:column;justify-content:center}
-  .journal-nyxia-side{width:100%;height:auto;padding-top:20px}
-  .journal-text-side{padding:0 24px;text-align:center;max-width:100%}
-  .journal-subtitle{margin:0 auto 24px}
-  .journal-badge-wrap{justify-content:center}
-}
 </style>
 </head>
 <body>
@@ -167,7 +128,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <span class="nav-icon">🔮</span> Ovilus
     </div>
     <div class="nav-item" id="nav-journal" onclick="openTab('journal')">
-      <span class="nav-icon">📖</span> Journal Spirituel
+      <span class="nav-icon">📖</span> Journal
     </div>
 
     <div class="sb-footer">
@@ -227,37 +188,10 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       </div>
     </div>
 
-    <!-- Journal Spirituel -->
-    <div class="panel" id="panel-journal">
-      <div class="journal-scene">
-        <div class="journal-bg"></div>
-        <div class="journal-particles" id="journalParticles"></div>
-        <div class="journal-content">
-          <div class="journal-nyxia-side">
-            <div class="journal-nyxia-glow"></div>
-            <div class="journal-nyxia-floor-glow"></div>
-            <img src="/NyXia.png" alt="NyXia" class="journal-nyxia-img">
-          </div>
-          <div class="journal-text-side">
-            <div class="journal-eyebrow">📖 Espace de Réflexion</div>
-            <h1 class="journal-title">Journal<br><em>Spirituel</em></h1>
-            <p class="journal-subtitle">
-              Ton espace pour consigner tes rêves, tes tirages, tes ressentis et tes consultations d'Ovilus. ✦ NyXia t'accompagne à poser en mots ce que tu traverses — pour intégrer, pas pour juger. 💜
-            </p>
-            <button class="journal-btn-glass" onclick="openJournalWithNyxia()">
-              <span class="journal-btn-icon">📖</span>
-              <span class="journal-btn-text-wrap">
-                <span class="journal-btn-label">Ouvrir mon journal avec NyXia</span>
-                <span class="journal-btn-sub">Écriture intuitive · Espace de dépôt</span>
-              </span>
-              <span class="journal-btn-arrow">→</span>
-            </button>
-            <div class="journal-badge-wrap">
-              <span class="journal-badge" style="--dot-color:#c4b5fd">📖 Réflexion</span>
-              <span class="journal-badge" style="--dot-color:#F4C842">✦ Portail Spirituel</span>
-            </div>
-          </div>
-        </div>
+    <!-- Panel Journal — iframe, même mécanisme que Gardienne -->
+    <div class="panel" id="panel-journal" style="flex-direction:column">
+      <div style="flex:1;overflow:hidden;position:relative">
+        <iframe src="/journal.html" style="width:100%;height:100%;border:none;display:block" title="Journal"></iframe>
       </div>
     </div>
   </div>
@@ -457,28 +391,6 @@ function speakViaBrowser(btn, clean){
 function escHtml(str){ var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 document.addEventListener('DOMContentLoaded', function(){ openTab('nyxia'); });
-
-/* Journal Spirituel — particules + ouverture vers NyXia */
-(function(){
-  var container = document.getElementById('journalParticles');
-  if(!container) return;
-  var colors = ['#c4b5fd','#a78bfa','#7B5CFF','#e9d5ff','#ffffff'];
-  for(var i = 0; i < 20; i++){
-    var p = document.createElement('div');
-    p.className = 'journal-particle';
-    var size = Math.random() * 2.5 + 0.8;
-    p.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(Math.random()*100)+'%;bottom:'+(Math.random()*-20)+'%;animation-duration:'+(Math.random()*14+9)+'s;animation-delay:'+(Math.random()*12)+'s;';
-    p.style.background = colors[Math.floor(Math.random()*colors.length)];
-    container.appendChild(p);
-  }
-})();
-
-function openJournalWithNyxia(){
-  openTab('nyxia');
-  var input = document.getElementById('input-nyxia');
-  input.value = "Je voudrais écrire dans mon journal aujourd'hui. Aide-moi à poser ce que je porte en mots.";
-  sendMessage('nyxia');
-}
 
 function logout(){
   fetch('/api/logout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: token }) })
