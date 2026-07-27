@@ -2,6 +2,9 @@ name = "portail-spirituel-worker"
 main = "worker.js"
 compatibility_date = "2024-11-01"
 
+[assets]
+directory = "./public"
+
 [[kv_namespaces]]
 binding = "SPIRITUEL_KV"
 id = "3e730b1c49f94e32a97cceff3b60a773"
