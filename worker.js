@@ -62,7 +62,6 @@ const SESSION_TTL = 60 * 60 * 24 * 7;
 const ADMIN_SESSION_TTL = 60 * 60 * 12;
 
 // ───────────── VOIX — NyXia (ElevenLabs) + Léna (OpenAI) ─────────────
-const AGENT_VOICE_ID_KEYS = { nyxia: 'HEYGEN_NYXIA_VOICE_ID', lena: 'HEYGEN_LENA_VOICE_ID' };
 const OPENAI_VOICE_MAP = { lena: 'nova' };
 
 async function sha256Hex(str) {
@@ -331,30 +330,7 @@ async function handleTTS(request, env) {
     return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token) });
   }
 
-  // ── Voie 1 : HeyGen (Léna et autres agents non-exclusifs) ──
-  const voiceIdKey = AGENT_VOICE_ID_KEYS[agent];
-  const heygenVoiceId = voiceIdKey ? env[voiceIdKey] : null;
-  if (heygenVoiceId && env.HEYGEN_API_KEY) {
-    const cacheKey = 'tts_cache:' + agent + ':' + (await sha256Hex(cleanText));
-    const cachedUrl = await env.SPIRITUEL_KV.get(cacheKey);
-    if (cachedUrl) return json({ success: true, proxyUrl: cachedUrl, cached: true });
-
-    const resp = await fetch('https://api.heygen.com/v3/voices/speech', {
-      method: 'POST',
-      headers: { 'X-Api-Key': env.HEYGEN_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: cleanText, voice_id: heygenVoiceId })
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      const audioUrl = data.data && data.data.audio_url;
-      if (audioUrl) {
-        await env.SPIRITUEL_KV.put(cacheKey, audioUrl, { expirationTtl: 60 * 60 * 24 * 30 });
-        return json({ success: true, proxyUrl: audioUrl });
-      }
-    }
-  }
-
-  // ── Voie 2 : OpenAI (voix distincte pour Léna) ──
+  // ── Léna & autres agents : OpenAI (voix distincte, ex. Léna = nova) ──
   const openaiVoice = OPENAI_VOICE_MAP[agent];
   if (openaiVoice && env.OpenAi_KEY) {
     const cacheKey = 'tts_cache_openai:' + agent + ':' + openaiVoice + ':' + (await sha256Hex(cleanText));
