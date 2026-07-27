@@ -60,6 +60,17 @@ const OVILUS_MODEL_FALLBACK = 'anthropic/claude-3.7-sonnet';
 const SESSION_TTL = 60 * 60 * 24 * 7;
 const ADMIN_SESSION_TTL = 60 * 60 * 12;
 
+// ───────────── VOIX — NyXia (ElevenLabs) + Léna (OpenAI) ─────────────
+const AGENT_ELEVENLABS_VOICE_ID_KEYS = { nyxia: 'ELEVENLABS_NYXIA_VOICE_ID' };
+const AGENT_VOICE_ID_KEYS = { nyxia: 'HEYGEN_NYXIA_VOICE_ID', lena: 'HEYGEN_LENA_VOICE_ID' };
+const OPENAI_VOICE_MAP = { lena: 'nova' };
+
+async function sha256Hex(str) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // ───────────── OVILUS — L'ENTITÉ ─────────────
 
 const OVILUS_PERSONAS = [
@@ -175,6 +186,8 @@ export default {
 
       // ── Chat NyXia / Léna ──
       if (path === '/api/chat' && request.method === 'POST') return await handleChat(request, env);
+      if (path === '/api/tts/nyxia' && request.method === 'POST') return await handleTTS(request, env);
+      if (path === '/api/tts/cached-audio' && request.method === 'GET') return await handleTTSCachedAudio(request, env, url);
 
       // ── Ovilus ──
       if (path === '/api/ovilus/consult' && request.method === 'POST') return await handleOvilusConsult(request, env);
@@ -268,13 +281,102 @@ async function handleChat(request, env) {
   return json({ content });
 }
 
+// ───────────── TTS (NyXia + Léna) ─────────────
+
+async function handleTTS(request, env) {
+  const { token, text, agent } = await request.json();
+  const session = await getSession(token, env);
+  if (!session) return json({ error: 'Session expirée.' }, 401);
+  if (!text) return json({ error: 'Texte requis.' }, 400);
+
+  const sanitized = text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+  const cleanText = Array.from(sanitized).slice(0, 4500).join('');
+
+  // ── Voie 0 : ElevenLabs (priorité — normalement NyXia) ──
+  const elevenLabsVoiceIdKey = AGENT_ELEVENLABS_VOICE_ID_KEYS[agent];
+  const elevenLabsVoiceId = elevenLabsVoiceIdKey ? env[elevenLabsVoiceIdKey] : null;
+
+  if (elevenLabsVoiceId && env.ELEVENLABS_API_KEY) {
+    const cacheKey = 'tts_cache_elevenlabs:' + agent + ':' + (await sha256Hex(cleanText));
+    const cachedBuf = await env.SPIRITUEL_KV.get(cacheKey, 'arrayBuffer');
+    if (cachedBuf) return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token), cached: true });
+
+    const resp = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + elevenLabsVoiceId, {
+      method: 'POST',
+      headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: cleanText, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+    });
+    if (resp.ok) {
+      const audioBuf = await resp.arrayBuffer();
+      await env.SPIRITUEL_KV.put(cacheKey, audioBuf, { expirationTtl: 60 * 60 * 24 * 30 });
+      return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token) });
+    }
+  }
+
+  // ── Voie 1 : HeyGen ──
+  const voiceIdKey = AGENT_VOICE_ID_KEYS[agent];
+  const heygenVoiceId = voiceIdKey ? env[voiceIdKey] : null;
+  if (heygenVoiceId && env.HeyGen_KEY) {
+    const cacheKey = 'tts_cache:' + agent + ':' + (await sha256Hex(cleanText));
+    const cachedUrl = await env.SPIRITUEL_KV.get(cacheKey);
+    if (cachedUrl) return json({ success: true, proxyUrl: cachedUrl, cached: true });
+
+    const resp = await fetch('https://api.heygen.com/v3/voices/speech', {
+      method: 'POST',
+      headers: { 'X-Api-Key': env.HeyGen_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: cleanText, voice_id: heygenVoiceId })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const audioUrl = data.data && data.data.audio_url;
+      if (audioUrl) {
+        await env.SPIRITUEL_KV.put(cacheKey, audioUrl, { expirationTtl: 60 * 60 * 24 * 30 });
+        return json({ success: true, proxyUrl: audioUrl });
+      }
+    }
+  }
+
+  // ── Voie 2 : OpenAI (voix distincte pour Léna) ──
+  const openaiVoice = OPENAI_VOICE_MAP[agent];
+  if (openaiVoice && env['OpenAi_KEY']) {
+    const cacheKey = 'tts_cache_openai:' + agent + ':' + openaiVoice + ':' + (await sha256Hex(cleanText));
+    const cachedBuf = await env.SPIRITUEL_KV.get(cacheKey, 'arrayBuffer');
+    if (cachedBuf) return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token), cached: true });
+
+    const resp = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + env['OpenAi_KEY'], 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'tts-1', voice: openaiVoice, input: cleanText, response_format: 'mp3' })
+    });
+    if (resp.ok) {
+      const audioBuf = await resp.arrayBuffer();
+      await env.SPIRITUEL_KV.put(cacheKey, audioBuf, { expirationTtl: 60 * 60 * 24 * 30 });
+      return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token) });
+    }
+  }
+
+  // Rien de configuré côté serveur — le client bascule automatiquement sur la voix du navigateur.
+  return json({ error: 'Aucune voix serveur configurée pour cet agent.' }, 404);
+}
+
+async function handleTTSCachedAudio(request, env, url) {
+  const token = url.searchParams.get('token');
+  const session = await getSession(token, env);
+  if (!session) return new Response('Non autorisé', { status: 401 });
+  const key = url.searchParams.get('key');
+  if (!key || (!key.startsWith('tts_cache_openai:') && !key.startsWith('tts_cache_elevenlabs:'))) return new Response('Requête invalide', { status: 400 });
+  const audio = await env.SPIRITUEL_KV.get(key, 'arrayBuffer');
+  if (!audio) return new Response('Audio introuvable', { status: 404 });
+  return new Response(audio, { status: 200, headers: { 'Content-Type': 'audio/mpeg', ...CORS } });
+}
+
 // ───────────── OVILUS ─────────────
 
 async function handleOvilusConsult(request, env) {
   const { question, mode, token } = await request.json();
   const session = await getSession(token, env);
   if (!session) return json({ error: 'Session expirée. Reconnecte-toi.' }, 401);
-  if (!question) return json({ error: 'Question vide.' }, 400);
+  if (!question && mode !== 'mots') return json({ error: 'Question vide.' }, 400);
 
   if (mode === 'mots') {
     // Mode gratuit — tirage direct dans la banque de mots, aucun appel IA.
