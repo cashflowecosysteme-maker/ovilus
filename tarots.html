@@ -87,6 +87,7 @@ canvas#starry-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
     <div id="status" class="status" style="display:none"></div>
     <div class="cards" id="cards"></div>
     <div class="reading" id="reading" style="display:none"></div>
+    <div id="discuss" style="text-align:center"></div>
   </div>
 </div>
 
@@ -138,6 +139,7 @@ function drawTirage(){
   var cardsEl = document.getElementById('cards');
   var reading = document.getElementById('reading');
   cardsEl.innerHTML = ''; reading.style.display = 'none';
+  document.getElementById('discuss').innerHTML = '';
   status.style.display = 'block';
   status.innerHTML = '<div class="spin"></div>NyXia mélange et tire tes cartes…';
 
@@ -166,6 +168,17 @@ function drawTirage(){
     reading.style.display = 'flex';
     reading.innerHTML = '<img class="ny" src="/NyXia_Tarots.png" alt="NyXia" onerror="this.style.display=\'none\'"><div class="body"><div class="n">✦ La lecture de NyXia</div>' + escapeHtml(data.interpretation) + '</div>';
     reading.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+    var typeLabel = (TIRAGES.filter(function(x){ return x.id === currentType; })[0] || {}).t || currentType;
+    var cardsSummary = data.cards.map(function(c){ return c.name + ' (' + c.position + ')'; }).join(', ');
+    var msg = 'J\'aimerais discuter avec toi de mon tirage Tarot « ' + typeLabel + ' ». '
+      + (question ? 'Ma question était : ' + question + '. ' : '')
+      + 'J\'ai tiré : ' + cardsSummary + '. Peux-tu m\'aider à l\'approfondir ?';
+    var db = document.createElement('button'); db.className = 'btn';
+    db.style.cssText = 'margin:18px auto 0;display:block';
+    db.textContent = '💬 En discuter avec NyXia';
+    db.onclick = function(){ if(window.parent && window.parent !== window) window.parent.postMessage({ type:'nyxia_suggest', text: msg }, '*'); };
+    document.getElementById('discuss').appendChild(db);
   })
   .catch(function(){ status.style.display='block'; status.textContent = 'Erreur de connexion.'; });
 }
