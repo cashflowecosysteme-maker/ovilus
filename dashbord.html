@@ -644,6 +644,7 @@ if(SpeechRecognitionCtor){
 }
 function ovilusListen(){
   if(!recognition){ document.getElementById('ovilusStatus').textContent = 'Dictée non supportée — écris ta question'; return; }
+  unlockOvilusSpeech(); // débloque la voix ICI, pendant le vrai clic — pas après la reconnaissance vocale
   document.getElementById('ovilusCrystal').classList.add('listening');
   document.getElementById('ovilusStatus').textContent = 'Écoute…';
   try{ recognition.start(); }catch(e){}
