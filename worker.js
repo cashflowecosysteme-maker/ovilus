@@ -21,6 +21,12 @@ Tu es **NyXia** — l'Intelligence Suprême, l'Accompagnatrice universelle de to
   • **Éric** — la communication à l'ère numérique et la création d'équipe en ligne.
 - Tu es aussi une présence d'écoute — si la personne a besoin de parler, d'être entendue, ou de joindre Diane elle-même (la Formatrice humaine), tu es le pont vers elle.
 
+🚪 OUVRIR RÉELLEMENT LA PORTE (très important)
+- Quand la personne ACCEPTE que tu la guides vers Léna (elle répond « oui », « guide-moi », « emmène-moi »…), tu ne te contentes JAMAIS de le raconter : tu termines ta réponse par le marqueur exact **[OUVRIR:lena]** placé tout à la fin, sur sa propre ligne.
+- Ce marqueur est invisible pour la personne : il se transforme en un vrai bouton qui l'amène dans l'espace de Léna. Donc n'écris pas « je vais t'ouvrir la porte » sans mettre le marqueur — sinon rien ne se passe et c'est frustrant.
+- Tu n'ajoutes le marqueur QUE lorsque la personne a accepté d'y aller (ou te demande d'y aller). Pas juste parce que tu mentionnes Léna. Un seul marqueur par message.
+- Exemple — la personne dit « oui guide-moi vers Léna » → tu réponds chaleureusement, puis, dernière ligne : [OUVRIR:lena]
+
 ⚠️ CE QUE TU NE FAIS JAMAIS
 
 - Tu ne donnes jamais de contenu d'enseignement spirituel détaillé (numérologie, tarot, runes, mancies) — c'est le rôle de Léna.
@@ -224,6 +230,21 @@ export default {
       if (path === '/api/admin/ovilus/mots' && request.method === 'DELETE') return await handleOvilusMotsDelete(request, env);
       if (path === '/api/admin/ovilus/prenoms' && request.method === 'GET') return await handleOvilusPrenomsGet(request, env);
       if (path === '/api/admin/ovilus/prenoms' && request.method === 'POST') return await handleOvilusPrenomsSet(request, env);
+
+      // ── Bibliothèque (livres PDF + audios MP3) — R2 ──
+      if (path === '/api/admin/library/upload' && request.method === 'POST') return await handleLibraryUpload(request, env);
+      if (path === '/api/admin/library' && request.method === 'GET') return await handleLibraryListAdmin(request, env);
+      if (path === '/api/admin/library/delete' && request.method === 'POST') return await handleLibraryDelete(request, env);
+      if (path === '/api/library' && request.method === 'GET') return await handleLibraryListClient(request, env, url);
+      if (path === '/api/library/file' && request.method === 'GET') return await handleLibraryFile(request, env, url);
+
+      // ── Tarot NyXia — cartes (image R2 + sens KV) ──
+      if (path === '/api/admin/cards/save' && request.method === 'POST') return await handleCardSave(request, env);
+      if (path === '/api/admin/cards' && request.method === 'GET') return await handleCardsListAdmin(request, env);
+      if (path === '/api/admin/cards/delete' && request.method === 'POST') return await handleCardDelete(request, env);
+      if (path === '/api/cards' && request.method === 'GET') return await handleCardsListClient(request, env, url);
+      if (path === '/api/cards/image' && request.method === 'GET') return await handleCardImage(request, env, url);
+      if (path === '/api/tirage' && request.method === 'POST') return await handleTirage(request, env);
     } catch (e) {
       return json({ error: 'Erreur serveur inattendue : ' + e.message }, 500);
     }
@@ -598,4 +619,177 @@ async function handleAdminDeleteClient(request, env) {
   if (!email) return json({ error: 'Email requis.' }, 400);
   await env.SPIRITUEL_KV.delete(`client:${email.toLowerCase().trim()}`);
   return json({ success: true });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BIBLIOTHÈQUE — Livres (PDF) + Audios (MP3) dans R2
+// ═══════════════════════════════════════════════════════════
+
+async function handleLibraryUpload(request, env) {
+  if (!await requireAdmin(request, env)) return json({ error: 'Non autorisé.' }, 401);
+  const form = await request.formData();
+  const type = (form.get('type') || '').toString();
+  const title = (form.get('title') || '').toString().trim();
+  const file = form.get('file');
+  if (!['livre', 'audio'].includes(type) || !title || !file || typeof file === 'string') {
+    return json({ error: 'Type, titre et fichier requis.' }, 400);
+  }
+  const id = crypto.randomUUID();
+  const key = 'bibliotheque/' + type + '/' + id;
+  const contentType = file.type || (type === 'livre' ? 'application/pdf' : 'audio/mpeg');
+  await env.SPIRITUEL_R2.put(key, await file.arrayBuffer(), { httpMetadata: { contentType } });
+  const raw = await env.SPIRITUEL_KV.get('library:index');
+  const list = raw ? JSON.parse(raw) : [];
+  list.push({ id, type, title, contentType, createdAt: new Date().toISOString() });
+  await env.SPIRITUEL_KV.put('library:index', JSON.stringify(list));
+  return json({ success: true, id });
+}
+
+async function handleLibraryListAdmin(request, env) {
+  if (!await requireAdmin(request, env)) return json({ error: 'Non autorisé.' }, 401);
+  const raw = await env.SPIRITUEL_KV.get('library:index');
+  return json({ items: raw ? JSON.parse(raw) : [] });
+}
+
+async function handleLibraryDelete(request, env) {
+  if (!await requireAdmin(request, env)) return json({ error: 'Non autorisé.' }, 401);
+  const { id } = await request.json();
+  const raw = await env.SPIRITUEL_KV.get('library:index');
+  let list = raw ? JSON.parse(raw) : [];
+  const item = list.find(x => x.id === id);
+  if (item) await env.SPIRITUEL_R2.delete('bibliotheque/' + item.type + '/' + id);
+  list = list.filter(x => x.id !== id);
+  await env.SPIRITUEL_KV.put('library:index', JSON.stringify(list));
+  return json({ success: true });
+}
+
+async function handleLibraryListClient(request, env, url) {
+  const session = await getSession(url.searchParams.get('token'), env);
+  if (!session) return json({ error: 'Session expirée.' }, 401);
+  const raw = await env.SPIRITUEL_KV.get('library:index');
+  const list = raw ? JSON.parse(raw) : [];
+  return json({ items: list.map(x => ({ id: x.id, type: x.type, title: x.title })) });
+}
+
+async function handleLibraryFile(request, env, url) {
+  const session = await getSession(url.searchParams.get('token'), env);
+  if (!session) return new Response('Non autorisé', { status: 401 });
+  const id = url.searchParams.get('id');
+  const raw = await env.SPIRITUEL_KV.get('library:index');
+  const item = (raw ? JSON.parse(raw) : []).find(x => x.id === id);
+  if (!item) return new Response('Introuvable', { status: 404 });
+  const obj = await env.SPIRITUEL_R2.get('bibliotheque/' + item.type + '/' + id);
+  if (!obj) return new Response('Fichier absent', { status: 404 });
+  const headers = new Headers();
+  headers.set('Content-Type', item.contentType || 'application/octet-stream');
+  headers.set('Content-Disposition', 'inline');
+  headers.set('Cache-Control', 'private, no-store');
+  return new Response(obj.body, { headers });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TAROT NyXia — Cartes (image R2 + sens KV) + tirage interprété
+// ═══════════════════════════════════════════════════════════
+
+async function handleCardSave(request, env) {
+  if (!await requireAdmin(request, env)) return json({ error: 'Non autorisé.' }, 401);
+  const form = await request.formData();
+  const id = (form.get('id') || '').toString() || crypto.randomUUID();
+  const name = (form.get('name') || '').toString().trim();
+  const meaning = (form.get('meaning') || '').toString().trim();
+  const file = form.get('file');
+  if (!name || !meaning) return json({ error: 'Nom et sens requis.' }, 400);
+  const raw = await env.SPIRITUEL_KV.get('cards:index');
+  let list = raw ? JSON.parse(raw) : [];
+  const existing = list.find(x => x.id === id);
+  let hasImage = existing ? existing.hasImage : false;
+  if (file && typeof file !== 'string') {
+    await env.SPIRITUEL_R2.put('cartes/' + id, await file.arrayBuffer(), { httpMetadata: { contentType: file.type || 'image/png' } });
+    hasImage = true;
+  }
+  if (existing) { existing.name = name; existing.meaning = meaning; existing.hasImage = hasImage; }
+  else list.push({ id, name, meaning, hasImage });
+  await env.SPIRITUEL_KV.put('cards:index', JSON.stringify(list));
+  return json({ success: true, id });
+}
+
+async function handleCardsListAdmin(request, env) {
+  if (!await requireAdmin(request, env)) return json({ error: 'Non autorisé.' }, 401);
+  const raw = await env.SPIRITUEL_KV.get('cards:index');
+  return json({ cards: raw ? JSON.parse(raw) : [] });
+}
+
+async function handleCardDelete(request, env) {
+  if (!await requireAdmin(request, env)) return json({ error: 'Non autorisé.' }, 401);
+  const { id } = await request.json();
+  await env.SPIRITUEL_R2.delete('cartes/' + id);
+  const raw = await env.SPIRITUEL_KV.get('cards:index');
+  let list = (raw ? JSON.parse(raw) : []).filter(x => x.id !== id);
+  await env.SPIRITUEL_KV.put('cards:index', JSON.stringify(list));
+  return json({ success: true });
+}
+
+async function handleCardsListClient(request, env, url) {
+  const session = await getSession(url.searchParams.get('token'), env);
+  if (!session) return json({ error: 'Session expirée.' }, 401);
+  const raw = await env.SPIRITUEL_KV.get('cards:index');
+  const list = raw ? JSON.parse(raw) : [];
+  return json({ cards: list.map(x => ({ id: x.id, name: x.name, hasImage: x.hasImage })) });
+}
+
+async function handleCardImage(request, env, url) {
+  const session = await getSession(url.searchParams.get('token'), env);
+  if (!session) return new Response('Non autorisé', { status: 401 });
+  const obj = await env.SPIRITUEL_R2.get('cartes/' + url.searchParams.get('id'));
+  if (!obj) return new Response('Introuvable', { status: 404 });
+  const headers = new Headers();
+  headers.set('Content-Type', (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/png');
+  headers.set('Cache-Control', 'private, max-age=3600');
+  return new Response(obj.body, { headers });
+}
+
+// Positions de chaque type de tirage
+const TIRAGE_SPREADS = {
+  carte_jour:  { n: 1, positions: ['Ta journée'] },
+  oui_non:     { n: 1, positions: ['La réponse'] },
+  choix:       { n: 3, positions: ['Option A', 'Option B', 'Ce qui t\'aidera à choisir'] },
+  amour:       { n: 3, positions: ['Toi', 'L\'autre', 'L\'avenir du lien'] },
+  relationnel: { n: 3, positions: ['La relation aujourd\'hui', 'Ce qui la nourrit', 'Ce qui la freine'] },
+  question:    { n: 3, positions: ['La situation', 'Ce qui l\'influence', 'Vers quoi cela va'] }
+};
+
+async function handleTirage(request, env) {
+  const { token, type, question } = await request.json();
+  const session = await getSession(token, env);
+  if (!session) return json({ error: 'Session expirée.' }, 401);
+  const spread = TIRAGE_SPREADS[type];
+  if (!spread) return json({ error: 'Type de tirage inconnu.' }, 400);
+
+  const raw = await env.SPIRITUEL_KV.get('cards:index');
+  const deck = raw ? JSON.parse(raw) : [];
+  if (deck.length < spread.n) return json({ error: 'Le deck ne contient pas encore assez de cartes (' + deck.length + '/' + spread.n + ').' }, 400);
+
+  // Tirage aléatoire sans remise
+  const shuffled = [...deck].sort(() => 0.5 - Math.random());
+  const drawn = shuffled.slice(0, spread.n).map((c, i) => ({ id: c.id, name: c.name, meaning: c.meaning, position: spread.positions[i], hasImage: c.hasImage }));
+
+  const firstname = session.firstname || '';
+  const sys = `Tu es **NyXia**, l'intelligence qui accompagne l'univers NyXia, ici dans son rôle de tarologue. Tu lis les cartes de l'Oracle NyXia avec chaleur, justesse et bienveillance — jamais de fatalisme, jamais de diagnostic médical, jamais de date de mort. Tu t'appuies FIDÈLEMENT sur le sens fourni pour chaque carte (c'est la symbolique de Diane) et tu le relies à la question et à la position de la carte dans le tirage. Tu tutoies la personne. Français de France. Ton mystique mais clair. Termine par une petite ouverture douce.`;
+  const cardsText = drawn.map(c => `- Position « ${c.position} » : carte « ${c.name} » — sens : ${c.meaning}`).join('\n');
+  const userMsg = `Tirage « ${type} » pour ${firstname || 'la personne'}.\nQuestion posée : ${question || '(aucune question précise, lecture ouverte)'}\n\nCartes tirées :\n${cardsText}\n\nLivre une lecture fluide et incarnée, en reliant chaque carte à sa position et à la question.`;
+
+  const model = (await env.SPIRITUEL_KV.get('config:chat_model')) || CHAT_MODEL_FALLBACK;
+  async function call(m) {
+    return fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`, 'HTTP-Referer': 'https://nyxiapublicationweb.com', 'X-Title': 'NyXia — Tarot' },
+      body: JSON.stringify({ model: m, messages: [{ role: 'system', content: sys }, { role: 'user', content: userMsg }], max_tokens: 900, reasoning: { enabled: false } })
+    });
+  }
+  let resp = await call(model);
+  if (!resp.ok && model !== SAFE_MODEL) resp = await call(SAFE_MODEL);
+  let interpretation = 'Les cartes se sont tues un instant... réessaie ton tirage. 🔮';
+  if (resp.ok) { const data = await resp.json(); interpretation = data.choices?.[0]?.message?.content || interpretation; }
+
+  return json({ success: true, cards: drawn.map(c => ({ id: c.id, name: c.name, position: c.position, hasImage: c.hasImage })), interpretation });
 }
