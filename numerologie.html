@@ -45,6 +45,7 @@ canvas#starry-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
       <div class="big" id="num"></div>
       <div class="rlabel">Chemin de vie</div>
       <div class="rtext" id="txt"></div>
+      <button class="btn" id="discussBtn" style="display:none;margin-top:20px">💬 En discuter avec NyXia</button>
     </div>
   </div>
 </div>
@@ -72,6 +73,10 @@ function calc(){
   document.getElementById('num').textContent = life;
   document.getElementById('txt').textContent = MEANINGS[life] || '';
   document.getElementById('result').classList.add('on');
+  var db = document.getElementById('discussBtn');
+  var msg = 'J\'aimerais discuter avec toi de mon chemin de vie ' + life + '. Peux-tu m\'aider à l\'approfondir ?';
+  db.onclick = function(){ if(window.parent && window.parent !== window) window.parent.postMessage({ type:'nyxia_suggest', text: msg }, '*'); };
+  db.style.display = 'inline-block';
   document.getElementById('result').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 </script>
