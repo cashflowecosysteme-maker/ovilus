@@ -22,11 +22,19 @@ h1 em{font-style:italic;background:linear-gradient(135deg,#c4b5fd,var(--p3));-we
 .rname{font-family:'Space Grotesk',sans-serif;font-size:20px;color:#fff;margin-bottom:4px}
 .rkey{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
 .rtext{font-size:15px;line-height:1.75;color:var(--t2)}
+canvas#starry-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.hero-nyxia{position:relative;display:flex;justify-content:center;align-items:center;min-height:200px;margin-bottom:10px}
+.ny-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;background:radial-gradient(ellipse 70% 80% at 50% 50%,rgba(123,92,255,0.55),rgba(100,60,200,0.28) 40%,transparent 72%);filter:blur(26px);animation:glowPulse 3.5s ease-in-out infinite;z-index:0;pointer-events:none}
+.ny-float{position:relative;z-index:1;height:190px;border-radius:16px;object-fit:cover;filter:drop-shadow(0 0 26px rgba(123,92,255,0.5));animation:nyxiaFloat 4.5s ease-in-out infinite}
+@keyframes glowPulse{0%,100%{opacity:.72;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.07)}}
+@keyframes nyxiaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 </style>
 </head>
 <body>
 <script>(function(){var t=new URLSearchParams(location.search).get("token");if(!t){location.replace("/login.html");return;}fetch("/api/check-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:t})}).then(function(r){return r.json();}).then(function(d){if(!d.valid)location.replace("/login.html");}).catch(function(){location.replace("/login.html");});})();</script>
 <div class="wrap">
+  <div class="hero-nyxia"><div class="ny-glow"></div><img src="/Rune_NyXia.png" class="ny-float" alt="NyXia" onerror="this.style.display='none'"></div>
+  
   <h1>Tirage de <em>Runes</em></h1>
   <div class="sub">Concentre-toi sur ta question, puis laisse une rune du Futhark venir à toi. ᚱ</div>
   <button class="btn" onclick="draw()">Tirer une rune</button>
@@ -74,5 +82,7 @@ function draw(){
   box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
 }
 </script>
+<canvas id="starry-canvas"></canvas>
+<script src="/js/starry-bg.js"></script>
 </body>
 </html>
