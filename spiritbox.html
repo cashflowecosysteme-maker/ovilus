@@ -185,7 +185,7 @@
     fragmentTimer = setTimeout(pullFragment, delay);
   }
 
-  function togglePower(){
+  window.togglePower = function togglePower(){
     isOn = !isOn;
     powerBtn.classList.toggle('on', isOn);
     powerBtn.textContent = isOn ? 'ARRÊT' : 'MARCHE';
