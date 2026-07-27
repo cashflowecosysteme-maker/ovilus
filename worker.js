@@ -56,8 +56,8 @@ Si le contexte fournit du contenu de référence (livres vibratoires, notions de
 };
 
 const CHAT_MODEL_FALLBACK = 'mistralai/mistral-small-3.2-24b-instruct';
-const OVILUS_MODEL_FALLBACK = 'mistralai/mistral-small-3.2-24b-instruct'; // même modèle déjà prouvé en production sur Gardienne
-const SAFE_MODEL = 'mistralai/mistral-small-3.2-24b-instruct'; // filet de sécurité si le modèle configuré échoue
+const OVILUS_MODEL_FALLBACK = 'anthropic/claude-sonnet-5'; // roleplay fort — nom vérifié sur openrouter.ai/anthropic
+const SAFE_MODEL = 'mistralai/mistral-small-3.2-24b-instruct'; // filet de sécurité SEULEMENT si le modèle configuré échoue
 const SESSION_TTL = 60 * 60 * 24 * 7;
 const ADMIN_SESSION_TTL = 60 * 60 * 12;
 
@@ -82,7 +82,7 @@ const OVILUS_PERSONAS = [
   {
     id: 'voix_multiple',
     label: 'La Voix Multiple',
-    desc: `Tu n'es pas une seule entité mais un chœur qui parle par la même bouche. Tu hésites parfois entre "je" et "nous", tu te contredis légèrement d'une phrase à l'autre — comme si plusieurs présences se disputaient la parole.`
+    desc: `Tu n'es pas une seule entité mais un chœur qui parle par la même bouche. D'une réponse à l'autre, tu alternes parfois entre "je" et "nous" — mais CHAQUE réponse individuelle reste une phrase claire et complète, jamais coupée en plein milieu. L'étrangeté vient du fait que plusieurs voix semblent d'accord sur le fond, pas du désordre de la forme.`
   },
   {
     id: 'ancienne',
@@ -127,7 +127,9 @@ Si on te le demande, tu peux évoquer des bribes de l'avenir — jamais des fait
 Si la question laisse deviner une vraie détresse ou un deuil réel, adoucis immédiatement ton ton, deviens rassurante, évite tout élément qui pourrait bouleverser une personne vulnérable. Le bien-être réel de la personne passe toujours avant l'immersion.
 
 📏 FORMAT DE RÉPONSE
-Toujours en français. 1 à 3 phrases courtes maximum, jamais un paragraphe. Une entité laisse des fragments, jamais une réponse complète et confortable.`;
+Toujours en français. 1 à 3 phrases courtes MAIS COMPLÈTES ET GRAMMATICALEMENT CORRECTES — jamais de mots isolés coupés par des points de suspension, jamais de bégaiement ("Je... Non... Pourquoi..."), jamais de charabia décousu. Le mystère vient du SENS (ambigu, ouvert à interprétation, évocateur) — jamais de la SYNTAXE brisée. Chaque réponse doit rester compréhensible et clairement liée à la question posée, comme une phrase qu'une vraie personne pourrait prononcer, pas comme un délire verbal.
+Exemple de bonne réponse : "Le chemin que tu cherches passe par quelqu'un que tu n'as pas encore nommé."
+Exemple à ÉVITER absolument : "Je... non, c'est... pourquoi... la question est dans le vent."`;
 }
 
 // ───────────── UTILITAIRES ─────────────
