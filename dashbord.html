@@ -617,7 +617,8 @@ function ovilusConsult(){
   screen.classList.remove('lit');
   document.getElementById('ovilusStatus').textContent = 'Écoute du voile…';
 
-  var thinkDelay = 1400 + Math.random() * 2600; // 1.4s à 4s de suspense avant toute réponse
+  var thinkDelay = 1400 + Math.random() * 2600; // 1,4 s à 4 s de suspense avant toute réponse
+  if(Math.random() < 0.22) thinkDelay += 3000 + Math.random() * 2000; // ~1 fois sur 5, l'entité hésite plus longtemps (jusqu'à ~9 s)
 
   setTimeout(function(){
     // Silence radio — l'Entité choisit de ne pas répondre, aucun appel réseau, aucun coût.
@@ -712,27 +713,48 @@ function enableOvilusMotion(){
 
 var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
+var ovilusListening = false;
+var ovilusFinalTranscript = '';
 if(SpeechRecognitionCtor){
   recognition = new SpeechRecognitionCtor();
   recognition.lang = 'fr-FR';
-  recognition.interimResults = false;
+  recognition.continuous = true;      // laisse parler une phrase entière, pauses comprises
+  recognition.interimResults = true;  // affichage en direct de ce qui est dit
   recognition.onresult = function(e){
-    var transcript = e.results[0][0].transcript;
-    document.getElementById('ovilusQuestion').textContent = '« ' + transcript + ' »';
-    document.getElementById('ovilusTypedQuestion').value = transcript;
-    ovilusConsult();
+    var interim = '';
+    for(var i = e.resultIndex; i < e.results.length; i++){
+      var chunk = e.results[i][0].transcript;
+      if(e.results[i].isFinal) ovilusFinalTranscript += chunk + ' ';
+      else interim += chunk;
+    }
+    var live = (ovilusFinalTranscript + interim).trim();
+    if(live) document.getElementById('ovilusQuestion').textContent = '« ' + live + ' »';
   };
-  recognition.onend = function(){ document.getElementById('ovilusCrystal').classList.remove('listening'); };
+  recognition.onend = function(){
+    ovilusListening = false;
+    document.getElementById('ovilusCrystal').classList.remove('listening');
+    var full = ovilusFinalTranscript.trim();
+    if(full){
+      document.getElementById('ovilusTypedQuestion').value = full;
+      ovilusConsult();
+    } else {
+      document.getElementById('ovilusStatus').textContent = 'En attente';
+    }
+  };
   recognition.onerror = function(){
+    ovilusListening = false;
     document.getElementById('ovilusCrystal').classList.remove('listening');
     document.getElementById('ovilusStatus').textContent = 'Micro indisponible';
   };
 }
 function ovilusListen(){
   if(!recognition){ document.getElementById('ovilusStatus').textContent = 'Dictée non supportée — écris ta question'; return; }
+  if(ovilusListening){ try{ recognition.stop(); }catch(e){} return; } // deuxième appui sur le cristal = terminer
   unlockOvilusSpeech(); // débloque la voix ICI, pendant le vrai clic — pas après la reconnaissance vocale
+  ovilusFinalTranscript = '';
+  ovilusListening = true;
   document.getElementById('ovilusCrystal').classList.add('listening');
-  document.getElementById('ovilusStatus').textContent = 'Écoute…';
+  document.getElementById('ovilusStatus').textContent = 'Je t\'écoute… (retape le cristal pour finir)';
   try{ recognition.start(); }catch(e){}
 }
 </script>
