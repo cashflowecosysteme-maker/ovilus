@@ -115,7 +115,18 @@ header{position:relative;z-index:100;height:56px;flex-shrink:0;background:rgba(1
   cursor:pointer;font-size:16px;transition:all .2s}
 .btn-send{padding:0 22px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700}
 
-/* Léna panel */
+/* Images dans le chat */
+.img-stage{display:none;gap:10px;align-items:center;padding:10px 26px 0}
+.img-stage.on{display:flex}
+.img-stage img{height:52px;border-radius:8px;border:1px solid rgba(123,92,255,0.35)}
+.img-stage .rm{background:rgba(255,75,110,0.12);border:1px solid rgba(255,75,110,0.3);color:#ff8fab;border-radius:8px;font-size:12px;padding:5px 11px;cursor:pointer}
+.msg-photo{max-width:220px;border-radius:12px;margin-top:6px;display:block}
+.gen-img-wrap{margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid rgba(123,92,255,0.18);max-width:300px}
+.gen-img-wrap img{width:100%;display:block;opacity:0;transition:opacity .5s ease}
+.gen-img-wrap img.loaded{opacity:1}
+.gen-img-loader{padding:26px 16px;text-align:center;color:var(--t3);font-size:12px}
+.gen-img-spinner{width:24px;height:24px;border:3px solid rgba(123,92,255,0.2);border-top-color:var(--p);border-radius:50%;animation:genspin .7s linear infinite;margin:0 auto 8px}
+@keyframes genspin{to{transform:rotate(360deg)}}
 
 /* ═══════ OVILUS — appareil (panel autonome) ═══════ */
 .panel#panel-ovilus.active{display:flex}
@@ -227,8 +238,11 @@ header{position:relative;z-index:100;height:56px;flex-shrink:0;background:rgba(1
     <div class="panel active" id="panel-nyxia">
       <div class="chat-header"><img src="/NyXia.png" alt=""><div><div class="name">NyXia</div><div class="sub">Ton accompagnatrice</div></div></div>
       <div class="chat-messages" id="messages-nyxia"></div>
+      <div id="stage-nyxia" class="img-stage"></div>
       <div class="chat-input-row">
         <button id="btn-mic-nyxia" class="btn-mic" onclick="toggleMic('nyxia')" title="Parler">🎤</button>
+        <button class="btn-mic" onclick="pickImage('nyxia')" title="Envoyer une image">🖼️</button>
+        <input type="file" id="file-nyxia" accept="image/*" style="display:none" onchange="onImagePicked('nyxia', this)">
         <input type="text" id="input-nyxia" placeholder="Écris à NyXia…">
         <button class="btn-send" onclick="sendMessage('nyxia')">Envoyer</button>
       </div>
@@ -238,8 +252,11 @@ header{position:relative;z-index:100;height:56px;flex-shrink:0;background:rgba(1
     <div class="panel" id="panel-lena">
       <div class="chat-header"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7B5CFF,#4FA3FF);display:flex;align-items:center;justify-content:center;font-size:20px">🌙</div><div><div class="name">Léna</div><div class="sub">Portail Vibratoire Spirituel</div></div></div>
       <div class="chat-messages" id="messages-lena"></div>
+      <div id="stage-lena" class="img-stage"></div>
       <div class="chat-input-row">
         <button id="btn-mic-lena" class="btn-mic" onclick="toggleMic('lena')" title="Parler">🎤</button>
+        <button class="btn-mic" onclick="pickImage('lena')" title="Envoyer une image à lire">🖼️</button>
+        <input type="file" id="file-lena" accept="image/*" style="display:none" onchange="onImagePicked('lena', this)">
         <input type="text" id="input-lena" placeholder="Écris à Léna…">
         <button class="btn-send" onclick="sendMessage('lena')">Envoyer</button>
       </div>
@@ -312,6 +329,33 @@ document.getElementById('header-username').textContent = username;
 })();
 
 var chatHistories = { nyxia: [], lena: [] };
+var pendingImage = { nyxia: null, lena: null };
+
+function pickImage(agent){ var f = document.getElementById('file-' + agent); if(f) f.click(); }
+function onImagePicked(agent, input){
+  var file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024){ alert('Image trop lourde (max 5 Mo). Choisis-en une plus légère.'); return; }
+  var reader = new FileReader();
+  reader.onload = function(){ pendingImage[agent] = reader.result; showStage(agent); };
+  reader.readAsDataURL(file);
+}
+function showStage(agent){
+  var stage = document.getElementById('stage-' + agent);
+  if(!stage) return;
+  if(!pendingImage[agent]){ clearStage(agent); return; }
+  stage.innerHTML = '';
+  var img = document.createElement('img'); img.src = pendingImage[agent]; img.alt = 'image à envoyer';
+  var rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '✕ Retirer';
+  rm.addEventListener('click', function(){ pendingImage[agent] = null; clearStage(agent); });
+  stage.appendChild(img); stage.appendChild(rm);
+  stage.classList.add('on');
+}
+function clearStage(agent){
+  var stage = document.getElementById('stage-' + agent);
+  if(stage){ stage.innerHTML = ''; stage.classList.remove('on'); }
+}
 var greetings = {
   nyxia: '✦ Bienvenue ' + (username||'') + '. Je suis NyXia, ton accompagnatrice. Sens-tu l\'appel du chemin spirituel aujourd\'hui ? Léna t\'attend pour t\'y guider. ✦',
   lena: '🌙 Je suis Léna. Je t\'accompagne à travers tes dons, ta numérologie, ton tarot, tes runes — et l\'Ovilus, si tu souhaites consulter l\'invisible. Par où commençons-nous ? 🔮'
@@ -357,11 +401,12 @@ function openTab(agent){
   closeSidebar();
 }
 
-function addUserMessage(agent, text){
+function addUserMessage(agent, text, img){
   chatHistories[agent].push({ role: 'user', content: text });
   var el = document.createElement('div');
   el.className = 'msg user';
-  el.textContent = text;
+  if(text){ var tx = document.createElement('div'); tx.textContent = text; el.appendChild(tx); }
+  if(img){ var im = document.createElement('img'); im.className = 'msg-photo'; im.src = img; im.alt = 'image envoyée'; el.appendChild(im); }
   var container = document.getElementById('messages-' + agent);
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
@@ -371,26 +416,52 @@ function addBotMessage(agent, text){
   chatHistories[agent].push({ role: 'assistant', content: text });
   var container = document.getElementById('messages-' + agent);
 
+  // Marqueur [IMAGE: ...] éventuel — Léna fait apparaître une image via Pollinations (gratuit, sans clé)
+  var imgRegex = /\[IMAGE\s*:\s*([\s\S]*?)\]/i;
+  var imgMatch = text.match(imgRegex);
+  var imgDesc = imgMatch ? imgMatch[1].trim() : null;
+  var displayText = text.replace(imgRegex, '').trim();
+
   var wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:flex-start;max-width:70%';
 
-  var bubble = document.createElement('div');
-  bubble.className = 'msg bot';
-  bubble.style.maxWidth = 'none';
-  bubble.innerHTML = escHtml(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-  wrap.appendChild(bubble);
+  if(displayText){
+    var bubble = document.createElement('div');
+    bubble.className = 'msg bot';
+    bubble.style.maxWidth = 'none';
+    bubble.innerHTML = escHtml(displayText).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    wrap.appendChild(bubble);
+  }
+
+  if(imgDesc){
+    var genWrap = document.createElement('div'); genWrap.className = 'gen-img-wrap';
+    var loader = document.createElement('div'); loader.className = 'gen-img-loader';
+    loader.innerHTML = '<div class="gen-img-spinner"></div>🎨 L\'image se dessine…';
+    genWrap.appendChild(loader);
+    wrap.appendChild(genWrap);
+    var cleanDesc = imgDesc.replace(/\n/g,' ').substring(0,300).trim();
+    var seed = Math.floor(Math.random() * 999999);
+    var gimg = document.createElement('img'); gimg.alt = cleanDesc; gimg.crossOrigin = 'anonymous';
+    var genRetried = false;
+    gimg.onload = function(){ loader.remove(); genWrap.appendChild(gimg); requestAnimationFrame(function(){ gimg.classList.add('loaded'); }); container.scrollTop = container.scrollHeight; };
+    gimg.onerror = function(){
+      if(!genRetried){ genRetried = true; gimg.src = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(cleanDesc.substring(0,100)) + '?width=768&height=768&seed=' + seed + '&private=true'; }
+      else { loader.innerHTML = '⚠️ L\'image n\'a pas pu apparaître.'; }
+    };
+    gimg.src = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(cleanDesc + ', high quality, detailed, symbolic, ethereal') + '?width=768&height=768&model=flux&seed=' + seed + '&private=true';
+  }
 
   var bs = 'padding:2px 9px;border-radius:50px;border:1px solid rgba(123,92,255,0.2);background:rgba(123,92,255,0.06);color:var(--t3);font-family:Outfit,sans-serif;font-size:11px;cursor:pointer;transition:all .15s';
   var acts = document.createElement('div');
   acts.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
 
   var spk = document.createElement('button'); spk.style.cssText = bs; spk.textContent = '🔊 Écouter';
-  spk.addEventListener('click', function(){ speakMsg(spk, text, agent); });
+  spk.addEventListener('click', function(){ speakMsg(spk, displayText || text, agent); });
   acts.appendChild(spk);
 
   var cpy = document.createElement('button'); cpy.style.cssText = bs; cpy.textContent = '📋 Copier';
   cpy.addEventListener('click', function(){
-    navigator.clipboard.writeText(text).then(function(){ cpy.textContent = '✓ Copié'; setTimeout(function(){ cpy.textContent = '📋 Copier'; }, 2000); });
+    navigator.clipboard.writeText(displayText || text).then(function(){ cpy.textContent = '✓ Copié'; setTimeout(function(){ cpy.textContent = '📋 Copier'; }, 2000); });
   });
   acts.appendChild(cpy);
 
@@ -417,10 +488,12 @@ function addMessage(agent, role, text){
 }
 
 function sendMessageText(agent, text){
-  addUserMessage(agent, text);
+  var img = pendingImage[agent] || null;
+  pendingImage[agent] = null; clearStage(agent);
+  addUserMessage(agent, text, img);
   fetch('/api/chat', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ message: text, history: chatHistories[agent].slice(0,-1), userName: username, agent: agent, token: token })
+    body: JSON.stringify({ message: text, history: chatHistories[agent].slice(0,-1), userName: username, agent: agent, token: token, image: img })
   })
   .then(function(r){ return r.json(); })
   .then(function(data){
@@ -433,7 +506,7 @@ function sendMessageText(agent, text){
 function sendMessage(agent){
   var input = document.getElementById('input-' + agent);
   var text = input.value.trim();
-  if(!text) return;
+  if(!text && !pendingImage[agent]) return;
   input.value = '';
   sendMessageText(agent, text);
 }
