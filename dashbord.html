@@ -715,11 +715,21 @@ var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecog
 var recognition = null;
 var ovilusListening = false;
 var ovilusFinalTranscript = '';
+var ovilusSilenceTimer = null;
+var OVILUS_SILENCE_MS = 3500; // fin automatique après ~3,5 s de silence — aucun geste à faire
+
+function ovilusResetSilence(){
+  if(ovilusSilenceTimer) clearTimeout(ovilusSilenceTimer);
+  ovilusSilenceTimer = setTimeout(function(){
+    if(ovilusListening){ try{ recognition.stop(); }catch(e){} }
+  }, OVILUS_SILENCE_MS);
+}
 if(SpeechRecognitionCtor){
   recognition = new SpeechRecognitionCtor();
   recognition.lang = 'fr-FR';
   recognition.continuous = true;      // laisse parler une phrase entière, pauses comprises
   recognition.interimResults = true;  // affichage en direct de ce qui est dit
+  recognition.onstart = function(){ ovilusResetSilence(); };
   recognition.onresult = function(e){
     var interim = '';
     for(var i = e.resultIndex; i < e.results.length; i++){
@@ -729,9 +739,11 @@ if(SpeechRecognitionCtor){
     }
     var live = (ovilusFinalTranscript + interim).trim();
     if(live) document.getElementById('ovilusQuestion').textContent = '« ' + live + ' »';
+    ovilusResetSilence(); // tant qu'elle parle, on repousse la fin ; dès qu'elle se tait, la fin arrive seule
   };
   recognition.onend = function(){
     ovilusListening = false;
+    if(ovilusSilenceTimer) clearTimeout(ovilusSilenceTimer);
     document.getElementById('ovilusCrystal').classList.remove('listening');
     var full = ovilusFinalTranscript.trim();
     if(full){
@@ -743,18 +755,19 @@ if(SpeechRecognitionCtor){
   };
   recognition.onerror = function(){
     ovilusListening = false;
+    if(ovilusSilenceTimer) clearTimeout(ovilusSilenceTimer);
     document.getElementById('ovilusCrystal').classList.remove('listening');
     document.getElementById('ovilusStatus').textContent = 'Micro indisponible';
   };
 }
 function ovilusListen(){
   if(!recognition){ document.getElementById('ovilusStatus').textContent = 'Dictée non supportée — écris ta question'; return; }
-  if(ovilusListening){ try{ recognition.stop(); }catch(e){} return; } // deuxième appui sur le cristal = terminer
+  if(ovilusListening){ try{ recognition.stop(); }catch(e){} return; } // tape à nouveau seulement si tu veux couper court avant
   unlockOvilusSpeech(); // débloque la voix ICI, pendant le vrai clic — pas après la reconnaissance vocale
   ovilusFinalTranscript = '';
   ovilusListening = true;
   document.getElementById('ovilusCrystal').classList.add('listening');
-  document.getElementById('ovilusStatus').textContent = 'Je t\'écoute… (retape le cristal pour finir)';
+  document.getElementById('ovilusStatus').textContent = 'Je t\'écoute…';
   try{ recognition.start(); }catch(e){}
 }
 </script>
