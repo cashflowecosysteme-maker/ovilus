@@ -433,7 +433,7 @@ function resetMicBtn(){
   btn.style.color = 'var(--t3)';
 }
 
-/* ═══════ TTS (Écouter) — même structure que Gardienne : serveur (ElevenLabs/HeyGen/OpenAI) avec repli navigateur ═══════ */
+/* ═══════ TTS (Écouter) — serveur : NyXia = ElevenLabs (exclusif), Léna = OpenAI. Repli navigateur pour Léna uniquement, jamais pour NyXia ═══════ */
 function stopSpeakBtn(btn){
   btn._speaking = false; btn.textContent = '🔊 Écouter';
   if(btn._audio){ btn._audio.pause(); btn._audio = null; }
