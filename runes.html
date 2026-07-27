@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Runes — NyXia</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--p:#7B5CFF;--p2:#5A6CFF;--p3:#4FA3FF;--gold:#F4C842;--t:#fff;--t2:#D6D9F0;--t3:#8891B8}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(60,20,120,0.45),transparent 70%),#0a0a18;color:var(--t2);min-height:100vh;padding:34px 20px 60px;text-align:center}
+.wrap{max-width:560px;margin:0 auto}
+h1{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:clamp(26px,5vw,38px);color:#fff;margin-bottom:6px}
+h1 em{font-style:italic;background:linear-gradient(135deg,#c4b5fd,var(--p3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--t3);font-size:14px;margin-bottom:26px;line-height:1.6}
+.btn{padding:14px 30px;border-radius:60px;border:none;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700;font-size:15px;font-family:'Space Grotesk',sans-serif;cursor:pointer;box-shadow:0 0 34px rgba(123,92,255,0.4)}
+.btn:hover{transform:translateY(-2px)}
+.rune{display:none;margin-top:34px;background:rgba(26,20,52,0.55);border:1px solid rgba(123,92,255,0.22);border-radius:20px;padding:32px 24px;animation:in .5s ease}
+.rune.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.glyph{font-size:80px;color:#c4b5fd;text-shadow:0 0 30px rgba(123,92,255,0.7);line-height:1;margin-bottom:10px}
+.rname{font-family:'Space Grotesk',sans-serif;font-size:20px;color:#fff;margin-bottom:4px}
+.rkey{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.rtext{font-size:15px;line-height:1.75;color:var(--t2)}
+</style>
+</head>
+<body>
+<script>(function(){var t=new URLSearchParams(location.search).get("token");if(!t){location.replace("/login.html");return;}fetch("/api/check-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:t})}).then(function(r){return r.json();}).then(function(d){if(!d.valid)location.replace("/login.html");}).catch(function(){location.replace("/login.html");});})();</script>
+<div class="wrap">
+  <h1>Tirage de <em>Runes</em></h1>
+  <div class="sub">Concentre-toi sur ta question, puis laisse une rune du Futhark venir à toi. ᚱ</div>
+  <button class="btn" onclick="draw()">Tirer une rune</button>
+  <div class="rune" id="rune">
+    <div class="glyph" id="glyph"></div>
+    <div class="rname" id="rname"></div>
+    <div class="rkey" id="rkey"></div>
+    <div class="rtext" id="rtext"></div>
+  </div>
+</div>
+<script>
+var RUNES = [
+  ["ᚠ","Fehu","Abondance","La prospérité, le bétail, ce qui se gagne et se partage. Une énergie de flux : reçois, mais fais circuler."],
+  ["ᚢ","Uruz","Force","La vitalité brute, l'aurochs. Puise dans ta puissance intérieure pour franchir un cap."],
+  ["ᚦ","Thurisaz","Épreuve","Une force qui te met à l'épreuve. Patience et prudence avant d'agir."],
+  ["ᚨ","Ansuz","Message","La parole, l'inspiration, un signe. Écoute — un message important arrive."],
+  ["ᚱ","Raidho","Voyage","Le chemin, le mouvement juste. Avance avec confiance, la route s'ouvre."],
+  ["ᚲ","Kenaz","Lumière","La flamme, la connaissance, la créativité. Une clarté nouvelle éclaire ta voie."],
+  ["ᚷ","Gebo","Don","L'échange, le cadeau, le lien. Une relation équilibrée, un présent à recevoir ou offrir."],
+  ["ᚹ","Wunjo","Joie","L'harmonie, le bonheur simple. Un moment de paix et de satisfaction t'attend."],
+  ["ᚺ","Hagalaz","Bouleversement","La grêle, une perturbation nécessaire. Ce qui secoue prépare un renouveau."],
+  ["ᚾ","Nauthiz","Nécessité","Le besoin, la contrainte féconde. Une limite t'enseigne la patience et la ressource."],
+  ["ᛁ","Isa","Pause","La glace, l'immobilité. Un temps d'arrêt : laisse les choses se clarifier."],
+  ["ᛃ","Jera","Récolte","Le cycle, la moisson. Tes efforts portent leurs fruits en leur temps."],
+  ["ᛇ","Eihwaz","Transformation","L'if, l'axe entre les mondes. Une mutation profonde, un passage."],
+  ["ᛈ","Perthro","Mystère","Le destin, le secret, le hasard. Quelque chose se dévoile — reste ouvert(e)."],
+  ["ᛉ","Algiz","Protection","L'élan, le bouclier. Tu es guidé(e) et protégé(e) ; suis ton intuition."],
+  ["ᛊ","Sowilo","Soleil","La victoire, l'énergie solaire. Réussite, clarté, force retrouvée."],
+  ["ᛏ","Tiwaz","Courage","Le guerrier, la justice. Agis avec droiture, tiens ta parole."],
+  ["ᛒ","Berkano","Renaissance","Le bouleau, la croissance, la fertilité. Un nouveau départ, un projet qui naît."],
+  ["ᛖ","Ehwaz","Mouvement","Le cheval, le partenariat, le progrès. Une avancée en confiance, à deux."],
+  ["ᛗ","Mannaz","Humanité","L'être humain, le soi. Reconnais ta place parmi les autres, avec humilité."],
+  ["ᛚ","Laguz","Intuition","L'eau, le flux émotionnel, l'inconscient. Laisse-toi porter par ton ressenti."],
+  ["ᛜ","Ingwaz","Gestation","La graine, le potentiel qui mûrit. Quelque chose se prépare en silence."],
+  ["ᛞ","Dagaz","Éveil","Le jour, la percée, l'illumination. Une prise de conscience change tout."],
+  ["ᛟ","Othala","Héritage","Le foyer, les racines, ce qui se transmet. Reviens à ta valeur essentielle."]
+];
+function draw(){
+  var r = RUNES[Math.floor(Math.random()*RUNES.length)];
+  document.getElementById('glyph').textContent = r[0];
+  document.getElementById('rname').textContent = r[1];
+  document.getElementById('rkey').textContent = r[2];
+  document.getElementById('rtext').textContent = r[3];
+  var box = document.getElementById('rune');
+  box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
+}
+</script>
+</body>
+</html>
