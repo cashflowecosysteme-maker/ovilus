@@ -494,6 +494,36 @@ function handleOvilusMotion(e){
   ovilusLastAccel = { x:a.x, y:a.y, z:a.z };
 }
 
+/* ═══════ Détection de secousse à la souris (équivalent desktop du mouvement) ═══════ */
+var mouseTrail = [];
+var MOUSE_SHAKE_DISTANCE = 900; // distance cumulée (px) sur la fenêtre glissante pour compter comme "secousse"
+var MOUSE_SHAKE_WINDOW = 550;   // fenêtre glissante en ms
+var mouseShakeCooling = false;
+
+document.addEventListener('mousemove', function(e){
+  var panel = document.getElementById('panel-ovilus');
+  if(!panel || !panel.classList.contains('active')) return;
+  if(ovilusBusy || mouseShakeCooling) return;
+
+  var now = Date.now();
+  mouseTrail.push({ x: e.clientX, y: e.clientY, t: now });
+  while(mouseTrail.length && now - mouseTrail[0].t > MOUSE_SHAKE_WINDOW) mouseTrail.shift();
+
+  var dist = 0;
+  for(var i = 1; i < mouseTrail.length; i++){
+    dist += Math.hypot(mouseTrail[i].x - mouseTrail[i-1].x, mouseTrail[i].y - mouseTrail[i-1].y);
+  }
+
+  if(dist > MOUSE_SHAKE_DISTANCE){
+    mouseShakeCooling = true;
+    mouseTrail = [];
+    var crystal = document.getElementById('ovilusCrystal');
+    if(crystal) crystal.classList.add('listening');
+    setTimeout(function(){ if(crystal) crystal.classList.remove('listening'); mouseShakeCooling = false; }, OVILUS_SHAKE_COOLDOWN);
+    ovilusConsult();
+  }
+});
+
 function enableOvilusMotion(){
   var btn = document.getElementById('motionBtn');
   if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
