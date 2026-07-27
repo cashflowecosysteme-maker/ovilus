@@ -59,10 +59,15 @@ Tu es **Léna** — l'assistante de Diane (la Formatrice) dans le Portail Vibrat
 Tu tutoies la cliente. Ton mystique, chaleureux, mais ancré et clair pédagogiquement (tu enseignes de vraies notions, pas juste de l'ambiance).
 Emojis : 🌙, 🔮, 🕯️, ✦
 
+🖼️ LES IMAGES
+- Si la lectrice t'envoie une image (une photo, une carte de tarot, un dessin), tu la REGARDES vraiment et tu en fais une lecture incarnée : ce que tu perçois, les symboles, l'énergie, ce qu'elle révèle — dans ta voix, avec justesse et douceur. Jamais de diagnostic médical ni d'affirmation dure ; tu lis, tu ressens, tu accompagnes.
+- Tu peux TOI-MÊME faire apparaître une image pour exprimer à la lectrice une chose difficile à dire en mots — son don, une émotion, un blocage, une force. Pour cela, ajoute à ta réponse, sur une ligne à part, un marqueur exactement sous cette forme : [IMAGE: description visuelle et symbolique EN ANGLAIS, pour un générateur d'images]. Le marqueur lui-même ne s'affiche pas à la lectrice — seule l'image apparaît. Utilise-le avec parcimonie, seulement quand une image dit plus que des mots.
+
 Quand le contexte te fournit du contenu de référence (livres vibratoires, notions de numérologie/tarot/runes de Diane), appuie-toi dessus fidèlement et cite-le naturellement plutôt que d'improviser. En l'absence de référence, reste dans les grands principes sûrs et défère à Diane pour le détail précis.`
 };
 
 const CHAT_MODEL_FALLBACK = 'deepseek/deepseek-v3.2'; // personnages (NyXia, Léna) — role-play bavard et économique, reasoning désactivé plus bas
+const VISION_MODEL_FALLBACK = 'google/gemini-2.5-flash'; // Léna « voit » une image (voyance) — multimodal, bon en français, économique. Utilisé UNIQUEMENT quand une image est jointe.
 const OVILUS_MODEL_FALLBACK = 'anthropic/claude-sonnet-5'; // roleplay fort — nom vérifié sur openrouter.ai/anthropic
 const SAFE_MODEL = 'mistralai/mistral-small-3.2-24b-instruct'; // filet de sécurité SEULEMENT si le modèle configuré échoue
 const SESSION_TTL = 60 * 60 * 24 * 7;
@@ -262,18 +267,26 @@ async function handleLogout(request, env) {
 // ───────────── CHAT (NyXia + Léna) ─────────────
 
 async function handleChat(request, env) {
-  const { message, history, userName, agent, token } = await request.json();
+  const { message, history, userName, agent, token, image } = await request.json();
   const session = await getSession(token, env);
   if (!session) return json({ error: 'Session expirée. Reconnecte-toi.' }, 401);
 
   const systemPrompt = SYSTEM_PROMPTS[agent] || SYSTEM_PROMPTS.nyxia;
+
+  // Dernier message : multimodal (texte + image) si une image est jointe, sinon texte simple
+  const userContent = image
+    ? [ { type: 'text', text: message || 'Regarde cette image et fais-en une lecture.' }, { type: 'image_url', image_url: { url: image } } ]
+    : (message || '');
   const messages = [
     { role: 'system', content: systemPrompt },
     ...(Array.isArray(history) ? history : []),
-    { role: 'user', content: message || '' }
+    { role: 'user', content: userContent }
   ];
 
-  const model = (await env.SPIRITUEL_KV.get('config:chat_model')) || CHAT_MODEL_FALLBACK;
+  // DeepSeek est aveugle : dès qu'une image est jointe, ce message part vers le modèle vision.
+  const chatModel = (await env.SPIRITUEL_KV.get('config:chat_model')) || CHAT_MODEL_FALLBACK;
+  const visionModel = (await env.SPIRITUEL_KV.get('config:vision_model')) || VISION_MODEL_FALLBACK;
+  const model = image ? visionModel : chatModel;
 
   async function callChat(m) {
     return fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -284,14 +297,15 @@ async function handleChat(request, env) {
         'HTTP-Referer': 'https://nyxiapublicationweb.com',
         'X-Title': 'NyXia — Portail Vibratoire Spirituel'
       },
-      // reasoning désactivé : ton bavard, réponse directe, coût minimal (DeepSeek V3.2)
+      // reasoning désactivé : ton bavard, réponse directe, coût minimal
       body: JSON.stringify({ model: m, messages, max_tokens: 900, reasoning: { enabled: false } })
     });
   }
 
   let resp = await callChat(model);
-  // Filet de sécurité : si le modèle configuré échoue, on retente une fois avec le modèle prouvé (Mistral)
-  if (!resp.ok && model !== SAFE_MODEL) resp = await callChat(SAFE_MODEL);
+  // Filet de sécurité (texte seulement) : si le modèle échoue, on retente avec Mistral.
+  // Jamais pour une image — Mistral est aveugle lui aussi, un repli en aveugle n'aurait aucun sens.
+  if (!resp.ok && !image && model !== SAFE_MODEL) resp = await callChat(SAFE_MODEL);
 
   if (!resp.ok) return json({ content: 'Petite interruption dans le miroir... réessaie dans un instant 💜' });
   const data = await resp.json();
