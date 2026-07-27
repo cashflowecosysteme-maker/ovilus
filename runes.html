@@ -44,6 +44,7 @@ canvas#starry-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
     <div class="rkey" id="rkey"></div>
     <div class="rtext" id="rtext"></div>
   </div>
+  <button class="btn" id="discussBtn" style="display:none;margin:22px auto 0">💬 En discuter avec NyXia</button>
 </div>
 <script>
 var RUNES = [
@@ -80,6 +81,10 @@ function draw(){
   document.getElementById('rtext').textContent = r[3];
   var box = document.getElementById('rune');
   box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
+  var db = document.getElementById('discussBtn');
+  var msg = 'J\'aimerais discuter avec toi de la rune que j\'ai tirée : ' + r[1] + ' — ' + r[2] + ' (' + r[3] + '). Peux-tu m\'aider à l\'approfondir ?';
+  db.onclick = function(){ if(window.parent && window.parent !== window) window.parent.postMessage({ type:'nyxia_suggest', text: msg }, '*'); };
+  db.style.display = 'block';
 }
 </script>
 <canvas id="starry-canvas"></canvas>
