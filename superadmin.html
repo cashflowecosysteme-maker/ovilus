@@ -116,6 +116,30 @@ th{font-size:10px;color:var(--t3);text-transform:uppercase}
       <div class="msg-ok" id="prenomsMsg"></div>
     </div>
 
+    <div class="panel">
+      <h2>Bibliothèque — Livres &amp; Audios</h2>
+      <div class="sub">Ajoute un livre (PDF) ou un audio (MP3). Ils apparaissent dans « Outils » côté cliente, protégés par le login, sans téléchargement.</div>
+      <div class="row">
+        <div class="field"><label>Type</label><select id="libType"><option value="livre">📚 Livre (PDF)</option><option value="audio">🎧 Audio (MP3)</option></select></div>
+        <div class="field" style="flex:2"><label>Titre</label><input id="libTitle" placeholder="ex : Vibratoire"></div>
+      </div>
+      <div class="field"><label>Fichier</label><input type="file" id="libFile" accept=".pdf,audio/*"></div>
+      <button class="btn-primary" onclick="uploadLibrary()">Téléverser</button>
+      <div class="msg-ok" id="libMsg"></div>
+      <table id="libTable"><thead><tr><th>Type</th><th>Titre</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="panel">
+      <h2>Tarot NyXia — Cartes</h2>
+      <div class="sub">Chaque carte : une image + son sens. NyXia s'appuie sur ce sens pour interpréter les tirages. Tu peux varier ton deck à volonté.</div>
+      <div class="field"><label>Nom de la carte</label><input id="cardName" placeholder="ex : L'Étoile"></div>
+      <div class="field"><label>Sens (ce que NyXia utilisera)</label><input id="cardMeaning" placeholder="ex : espoir, guidance, renouveau…"></div>
+      <div class="field"><label>Image de la carte</label><input type="file" id="cardFile" accept="image/*"></div>
+      <button class="btn-primary" onclick="saveCard()">Ajouter / Enregistrer la carte</button>
+      <div class="msg-ok" id="cardMsg"></div>
+      <div class="chip-list" id="cardsList"></div>
+    </div>
+
   </div>
 </div>
 
@@ -131,7 +155,7 @@ function adminLogin(){
       adminToken = data.token;
       document.getElementById('loginGate').classList.add('hidden');
       document.getElementById('adminPanel').classList.add('visible');
-      loadClients(); loadOvilusConfig(); loadMots(); loadPrenoms();
+      loadClients(); loadOvilusConfig(); loadMots(); loadPrenoms(); loadLibrary(); loadCards();
     } else {
       var err = document.getElementById('loginError');
       err.textContent = data.error || 'Mot de passe incorrect.';
@@ -238,6 +262,68 @@ function savePrenoms(){
   fetch('/api/admin/ovilus/prenoms', { method:'POST', headers: authHeaders(), body: JSON.stringify({ feminins: fem, masculins: masc }) })
   .then(function(r){ return r.json(); })
   .then(function(data){ document.getElementById('prenomsMsg').textContent = data.success ? '✓ Enregistré.' : (data.error||'Erreur'); });
+}
+
+/* ═══ Bibliothèque (livres + audios) ═══ */
+function uploadLibrary(){
+  var type = document.getElementById('libType').value;
+  var title = document.getElementById('libTitle').value.trim();
+  var file = document.getElementById('libFile').files[0];
+  var msg = document.getElementById('libMsg');
+  if(!title || !file){ msg.textContent = 'Titre et fichier requis.'; return; }
+  var fd = new FormData(); fd.append('type', type); fd.append('title', title); fd.append('file', file);
+  msg.textContent = '⏳ Téléversement…';
+  fetch('/api/admin/library/upload', { method:'POST', headers:{ 'X-Admin-Token': adminToken }, body: fd })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    msg.textContent = data.success ? '✓ Ajouté.' : (data.error || 'Erreur');
+    if(data.success){ document.getElementById('libTitle').value=''; document.getElementById('libFile').value=''; loadLibrary(); }
+  }).catch(function(){ msg.textContent = 'Erreur (fichier trop lourd ?).'; });
+}
+function loadLibrary(){
+  fetch('/api/admin/library', { headers: authHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var tbody = document.querySelector('#libTable tbody'); tbody.innerHTML='';
+    (data.items||[]).forEach(function(it){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + (it.type==='audio'?'🎧 Audio':'📚 Livre') + '</td><td>' + it.title + '</td><td></td>';
+      var del = document.createElement('button'); del.className='btn-danger'; del.textContent='Supprimer';
+      del.onclick = function(){ fetch('/api/admin/library/delete', { method:'POST', headers: authHeaders(), body: JSON.stringify({ id: it.id }) }).then(function(){ loadLibrary(); }); };
+      tr.lastElementChild.appendChild(del); tbody.appendChild(tr);
+    });
+  });
+}
+
+/* ═══ Tarot NyXia — cartes ═══ */
+function saveCard(){
+  var name = document.getElementById('cardName').value.trim();
+  var meaning = document.getElementById('cardMeaning').value.trim();
+  var file = document.getElementById('cardFile').files[0];
+  var msg = document.getElementById('cardMsg');
+  if(!name || !meaning){ msg.textContent = 'Nom et sens requis.'; return; }
+  var fd = new FormData(); fd.append('name', name); fd.append('meaning', meaning); if(file) fd.append('file', file);
+  msg.textContent = '⏳ Enregistrement…';
+  fetch('/api/admin/cards/save', { method:'POST', headers:{ 'X-Admin-Token': adminToken }, body: fd })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    msg.textContent = data.success ? '✓ Carte enregistrée.' : (data.error || 'Erreur');
+    if(data.success){ document.getElementById('cardName').value=''; document.getElementById('cardMeaning').value=''; document.getElementById('cardFile').value=''; loadCards(); }
+  }).catch(function(){ msg.textContent = 'Erreur.'; });
+}
+function loadCards(){
+  fetch('/api/admin/cards', { headers: authHeaders() })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var el = document.getElementById('cardsList'); el.innerHTML='';
+    (data.cards||[]).forEach(function(c){
+      var chip = document.createElement('div'); chip.className='chip';
+      chip.innerHTML = '<span>' + (c.hasImage?'🖼️ ':'') + c.name + '</span>';
+      var del = document.createElement('button'); del.textContent='✕';
+      del.onclick = function(){ fetch('/api/admin/cards/delete', { method:'POST', headers: authHeaders(), body: JSON.stringify({ id: c.id }) }).then(function(){ loadCards(); }); };
+      chip.appendChild(del); el.appendChild(chip);
+    });
+  });
 }
 </script>
 </body>
