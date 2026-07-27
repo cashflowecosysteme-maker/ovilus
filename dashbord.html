@@ -16,7 +16,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:'Outfit',sans-serif;background:var(--bg1);color:var(--t2)}
+body{font-family:'Outfit',sans-serif;background:var(--bg1);color:var(--t2);display:flex;flex-direction:column;height:100vh;height:100dvh}
 button{font-family:'Space Grotesk',sans-serif;cursor:pointer}
 input,textarea{font-family:'Outfit',sans-serif}
 
@@ -26,40 +26,59 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 60% 50% at 30% 20%, rgba(123,92,255,0.13) 0%, transparent 65%),
              radial-gradient(ellipse 50% 40% at 70% 80%, rgba(79,163,255,0.07) 0%, transparent 60%);}
 
-.app{display:flex;height:100vh;height:100dvh;position:relative;z-index:1}
+.app{display:flex;flex:1;min-height:0;position:relative;z-index:1}
 
-/* Sidebar */
+/* ═══════ Header — barre du haut (nom du portail à droite + Déconnexion) ═══════ */
+header{position:relative;z-index:100;height:56px;flex-shrink:0;background:rgba(15,28,63,0.9);
+  border-bottom:1px solid rgba(123,92,255,0.12);backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px 0 0}
+.header-brand{width:260px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 16px;
+  border-right:1px solid rgba(123,92,255,0.1);height:100%}
+.header-brand img{width:34px;height:34px;border-radius:50%;object-fit:cover;
+  border:1.5px solid rgba(123,92,255,0.5);box-shadow:0 0 20px rgba(123,92,255,0.4)}
+.brand-info{line-height:1.2}
+.brand-name{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,#a78bfa,var(--p3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-status{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px}
+.brand-status::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green)}
+.header-center{flex:1;display:flex;align-items:center;justify-content:center}
+.welcome-text{font-size:14px;color:var(--t3)}
+.welcome-text strong{color:var(--gold);font-weight:600}
+.header-actions{display:flex;align-items:center;gap:10px}
+.btn-header{padding:6px 16px;border-radius:50px;border:none;font-family:'Space Grotesk',sans-serif;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;white-space:nowrap}
+.btn-pro{background:linear-gradient(135deg,var(--gold),#e6a800);color:#1a1000}
+.btn-logout{background:rgba(255,75,110,0.1);border:1px solid rgba(255,75,110,0.25);color:#ff8fab}
+.btn-logout:hover{background:rgba(255,75,110,0.2)}
+#mobile-menu-btn{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0 12px;flex-shrink:0}
+
+/* ═══════ Sidebar ═══════ */
 .sidebar{width:260px;flex-shrink:0;background:rgba(15,28,63,0.6);border-right:1px solid rgba(123,92,255,0.15);
-  backdrop-filter:blur(16px);display:flex;flex-direction:column;padding:20px 14px}
-.sb-logo{display:flex;align-items:center;gap:10px;padding:8px 8px 20px}
-.sb-logo img{width:38px;height:38px;border-radius:50%;box-shadow:0 0 20px rgba(123,92,255,0.4)}
-.sb-logo b{font-family:'Space Grotesk',sans-serif;font-size:15px}
-.sb-welcome{font-size:12px;color:var(--t3);padding:0 8px 18px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;cursor:pointer;
-  color:var(--t3);font-size:14px;font-weight:600;border:1px solid transparent;margin-bottom:6px;transition:all .2s}
+  backdrop-filter:blur(16px);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.sidebar-section{padding:18px 12px 6px}
+.sidebar-label{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--t3);text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;
+  color:var(--t3);font-size:14px;font-weight:600;border:1px solid transparent;margin-bottom:3px;transition:all .2s}
 .nav-item:hover{background:rgba(123,92,255,0.08);color:var(--t2)}
 .nav-item.active{background:rgba(123,92,255,0.16);color:var(--t);border-color:rgba(123,92,255,0.35);box-shadow:0 0 18px rgba(123,92,255,0.12)}
-.nav-icon{font-size:17px}
-.sb-footer{margin-top:auto;padding:10px 8px}
-.btn-logout{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,75,110,0.3);
-  background:rgba(255,75,110,0.08);color:var(--red);font-size:12px;font-weight:700}
+.nav-icon{font-size:16px;flex-shrink:0}
+.nav-arrow{margin-left:auto;font-size:11px;color:var(--t3);opacity:.5}
+.sidebar-divider{height:1px;background:rgba(123,92,255,0.08);margin:8px 12px}
+.sidebar-bottom{margin-top:auto;padding:12px;border-top:1px solid rgba(123,92,255,0.08)}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  background:rgba(123,92,255,0.06);border:1px solid rgba(123,92,255,0.1)}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--p2));
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:600;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-plan{font-size:11px;color:var(--gold)}
 
-/* Mobile — hamburger + sidebar en overlay */
-.mobile-topbar{display:none}
+/* Mobile — hamburger dans le header + sidebar en overlay */
 .sidebar-backdrop{display:none}
 @media(max-width:760px){
-  .mobile-topbar{
-    display:flex; align-items:center; gap:12px; padding:12px 16px;
-    background:rgba(15,28,63,0.85); backdrop-filter:blur(16px);
-    border-bottom:1px solid rgba(123,92,255,0.15); position:relative; z-index:20;
-  }
-  .mobile-topbar img{width:30px;height:30px;border-radius:50%}
-  .mobile-topbar b{font-family:'Space Grotesk',sans-serif;font-size:15px}
-  #hamburgerBtn{
-    background:none;border:1px solid rgba(123,92,255,0.3);border-radius:8px;
-    color:var(--t);font-size:18px;padding:6px 10px;line-height:1;
-  }
-  .app{flex-direction:column;height:calc(100vh - 54px);height:calc(100dvh - 54px)}
+  #mobile-menu-btn{display:block}
+  .header-brand{width:auto;border:none}
+  .header-center{display:none}
   .sidebar{
     position:fixed; top:0; left:0; height:100vh; height:100dvh; width:78vw; max-width:280px;
     z-index:60; transform:translateX(-100%); transition:transform .25s ease;
@@ -142,37 +161,64 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <body>
 <canvas id="starry-canvas"></canvas>
 
-<div class="mobile-topbar">
-  <button id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
-  <img src="/NyXia.png" alt="">
-  <b>NyXia</b>
-</div>
+<header>
+  <button id="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+  <div class="header-brand">
+    <img src="/NyXia.png" alt="NyXia">
+    <div class="brand-info">
+      <div class="brand-name">NyXia IA</div>
+      <div class="brand-status">En ligne</div>
+    </div>
+  </div>
+  <div class="header-center">
+    <div class="welcome-text">Bienvenue ✦ <strong id="header-username"></strong></div>
+  </div>
+  <div class="header-actions">
+    <span class="btn-header btn-pro">⭐ PORTAIL VIBRATOIRE SPIRITUEL</span>
+    <button class="btn-header btn-logout" onclick="logout()">Déconnexion</button>
+  </div>
+</header>
 
 <div class="app">
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
   <div class="sidebar" id="sidebar">
-    <div class="sb-logo"><img src="/NyXia.png" alt=""><b>NyXia</b></div>
-    <div class="sb-welcome">Bienvenue <strong id="header-username"></strong></div>
 
-    <div class="nav-item active" id="nav-nyxia" onclick="openTab('nyxia')">
-      <span class="nav-icon">✦</span> NyXia
-    </div>
-    <div class="nav-item" id="nav-lena" onclick="openTab('lena')">
-      <span class="nav-icon">🌙</span> Léna — Portail Spirituel
-    </div>
-    <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);padding:14px 14px 4px;margin:0">Spiritisme</p>
-    <div class="nav-item" id="nav-ovilus" onclick="openTab('ovilus')">
-      <span class="nav-icon">🔮</span> Ovilus
-    </div>
-    <div class="nav-item" id="nav-spiritbox" onclick="openTab('spiritbox')">
-      <span class="nav-icon">📻</span> Spirit Box
-    </div>
-    <div class="nav-item" id="nav-journal" onclick="openTab('journal')">
-      <span class="nav-icon">📖</span> Journal
+    <div class="sidebar-section">
+      <div class="sidebar-label">Mon Espace</div>
+      <div class="nav-item" id="nav-chat" onclick="openTab('nyxia')">
+        <span class="nav-icon">💜</span> Mes Conversations <span class="nav-arrow">›</span>
+      </div>
+      <div class="nav-item active" id="nav-nyxia" onclick="openTab('nyxia')">
+        <span class="nav-icon">✦</span> NyXia <span class="nav-arrow">›</span>
+      </div>
+      <div class="nav-item" id="nav-lena" onclick="openTab('lena')">
+        <span class="nav-icon">🌙</span> Léna <span class="nav-arrow">›</span>
+      </div>
     </div>
 
-    <div class="sb-footer">
-      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Spiritisme</div>
+      <div class="nav-item" id="nav-ovilus" onclick="openTab('ovilus')">
+        <span class="nav-icon">🔮</span> Ovilus <span class="nav-arrow">›</span>
+      </div>
+      <div class="nav-item" id="nav-spiritbox" onclick="openTab('spiritbox')">
+        <span class="nav-icon">📻</span> Spirit Box <span class="nav-arrow">›</span>
+      </div>
+      <div class="nav-item" id="nav-journal" onclick="openTab('journal')">
+        <span class="nav-icon">📖</span> Journal <span class="nav-arrow">›</span>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-avatar">·</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-username">·</div>
+          <div class="user-plan">✦ Portail Vibratoire Spirituel</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -224,7 +270,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
           </div>
           <div class="ovilus-question" id="ovilusQuestion">Appuie sur le cristal et parle ta question</div>
 
-          <button id="motionBtn" onclick="enableOvilusMotion()" style="width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px solid rgba(123,92,255,0.3);background:rgba(123,92,255,0.1);color:var(--t2);font-size:12px;font-weight:700">📳 Activer la détection de mouvement</button>
+          <button id="motionBtn" onclick="enableOvilusMotion()" style="display:none;width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px solid rgba(123,92,255,0.3);background:rgba(123,92,255,0.1);color:var(--t2);font-size:12px;font-weight:700">📳 Activer la détection de mouvement</button>
 
           <div class="ovilus-type-row">
             <input type="text" id="ovilusTypedQuestion" placeholder="…ou écris-la ici">
@@ -258,6 +304,12 @@ var token = sessionStorage.getItem('nyxia_token');
 var username = localStorage.getItem('nyxia_username') || '';
 if(!token){ window.location.href = '/login.html'; }
 document.getElementById('header-username').textContent = username;
+(function(){
+  var sbName = document.getElementById('sidebar-username');
+  var sbAvatar = document.getElementById('sidebar-avatar');
+  if(sbName) sbName.textContent = username || 'Voyageuse';
+  if(sbAvatar) sbAvatar.textContent = (username || '·').charAt(0).toUpperCase();
+})();
 
 var chatHistories = { nyxia: [], lena: [] };
 var greetings = {
@@ -269,14 +321,15 @@ function setOvilusDeviceType(type){
   var phoneBtn = document.getElementById('deviceTypePhone');
   var computerBtn = document.getElementById('deviceTypeComputer');
   var hint = document.getElementById('deviceTypeHint');
+  var motionBtnEl = document.getElementById('motionBtn');
   phoneBtn.style.background = type === 'phone' ? 'rgba(123,92,255,0.35)' : 'rgba(123,92,255,0.1)';
   computerBtn.style.background = type === 'computer' ? 'rgba(123,92,255,0.35)' : 'rgba(123,92,255,0.1)';
   if(type === 'phone'){
     hint.textContent = '📱 Idéal ! Appuie sur "Activer la détection de mouvement" ci-dessous.';
-    var motionBtnEl = document.getElementById('motionBtn');
-    if(motionBtnEl) motionBtnEl.style.boxShadow = '0 0 16px rgba(123,92,255,0.5)';
+    if(motionBtnEl){ motionBtnEl.style.display = 'block'; motionBtnEl.style.boxShadow = '0 0 16px rgba(123,92,255,0.5)'; }
   } else {
-    hint.textContent = '💻 Sur ordinateur utilise simplement le micro.';
+    hint.textContent = '💻 Sur ordinateur, utilise simplement le micro ou écris ta question.';
+    if(motionBtnEl){ motionBtnEl.style.display = 'none'; motionBtnEl.style.boxShadow = 'none'; }
   }
 }
 
@@ -630,40 +683,8 @@ function handleOvilusMotion(e){
   ovilusLastAccel = { x:a.x, y:a.y, z:a.z };
 }
 
-/* ═══════ Détection de secousse à la souris (équivalent desktop du mouvement) ═══════ */
-var mouseTrail = [];
-var MOUSE_SHAKE_DISTANCE = 350; // distance cumulée (px) sur la fenêtre glissante pour compter comme "secousse"
-var MOUSE_SHAKE_WINDOW = 400;   // fenêtre glissante en ms
-var mouseShakeCooling = false;
-
-document.addEventListener('mousemove', function(e){
-  var panel = document.getElementById('panel-ovilus');
-  if(!panel || !panel.classList.contains('active')) return;
-  if(ovilusBusy || mouseShakeCooling) return;
-
-  var now = Date.now();
-  mouseTrail.push({ x: e.clientX, y: e.clientY, t: now });
-  while(mouseTrail.length && now - mouseTrail[0].t > MOUSE_SHAKE_WINDOW) mouseTrail.shift();
-
-  var dist = 0;
-  for(var i = 1; i < mouseTrail.length; i++){
-    dist += Math.hypot(mouseTrail[i].x - mouseTrail[i-1].x, mouseTrail[i].y - mouseTrail[i-1].y);
-  }
-
-  var statusEl = document.getElementById('ovilusStatus');
-  if(statusEl && dist > 60 && !ovilusBusy){
-    statusEl.textContent = 'Mouvement détecté… (' + Math.round(dist) + '/' + MOUSE_SHAKE_DISTANCE + ')';
-  }
-
-  if(dist > MOUSE_SHAKE_DISTANCE){
-    mouseShakeCooling = true;
-    mouseTrail = [];
-    var crystal = document.getElementById('ovilusCrystal');
-    if(crystal) crystal.classList.add('listening');
-    setTimeout(function(){ if(crystal) crystal.classList.remove('listening'); mouseShakeCooling = false; }, OVILUS_SHAKE_COOLDOWN);
-    ovilusConsult();
-  }
-});
+/* La « détection de mouvement » n'a de sens que sur téléphone (secousse réelle via l'accéléromètre).
+   Sur ordinateur, aucune secousse : on utilise simplement le micro ou la question écrite. */
 
 function enableOvilusMotion(){
   var btn = document.getElementById('motionBtn');
