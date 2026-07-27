@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spirit Box — NyXia</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#0F1C3F; --bg2:#1A2554; --p:#7B5CFF; --p2:#5A6CFF; --p3:#4FA3FF;
+    --t:#FFFFFF; --t2:#D6D9F0; --t3:#8891B8; --gold:#F4C842; --red:#FF4B6E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Outfit',sans-serif; color:var(--t2); min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    background:radial-gradient(ellipse at 50% -10%, var(--bg2) 0%, var(--bg1) 60%, #08102a 100%);
+  }
+  .device{
+    width:100%; max-width:400px; background:linear-gradient(160deg,#17204a 0%,#0c1230 100%);
+    border:1px solid rgba(123,92,255,0.35); border-radius:26px; padding:24px 22px 28px;
+    box-shadow:0 0 60px rgba(123,92,255,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .brand{text-align:center; font-family:'Space Grotesk',sans-serif; letter-spacing:4px; font-size:13px; color:var(--gold); margin-bottom:16px}
+
+  .dial-screen{
+    background:#050818; border:1px solid rgba(123,92,255,0.3); border-radius:12px;
+    padding:16px 14px; box-shadow:inset 0 0 20px rgba(0,0,0,0.85); margin-bottom:14px;
+  }
+  .dial-track{position:relative; height:34px; background:linear-gradient(90deg,#0c1230,#141c3f,#0c1230); border-radius:6px; overflow:hidden; margin-bottom:10px}
+  .dial-ticks{position:absolute; inset:0; background-image:repeating-linear-gradient(90deg, rgba(123,92,255,0.25) 0 1px, transparent 1px 14px)}
+  .dial-needle{position:absolute; top:0; bottom:0; width:2px; background:var(--gold); box-shadow:0 0 8px var(--gold); left:50%; transition:left .15s linear}
+  .freq-readout{text-align:center; font-family:'Space Grotesk',sans-serif; font-size:12px; color:var(--p3); letter-spacing:2px}
+
+  .fragment{
+    min-height:60px; display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:'Space Grotesk',sans-serif; font-size:20px; color:var(--p3); text-shadow:0 0 10px rgba(79,163,255,0.6);
+    letter-spacing:1px;
+  }
+  .fragment.lit{color:var(--gold); text-shadow:0 0 16px rgba(244,200,66,0.7)}
+  .status{text-align:center; font-size:10px; letter-spacing:2px; color:var(--t3); text-transform:uppercase; margin-top:6px}
+
+  .controls{display:flex; flex-direction:column; gap:14px; margin-top:16px}
+  .power-row{display:flex; justify-content:center}
+  #powerBtn{
+    width:120px; height:120px; border-radius:50%; border:2px solid var(--gold);
+    background:radial-gradient(circle at 40% 35%, #b48cff, #38236f 75%); color:#fff;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; letter-spacing:1px;
+    box-shadow:0 0 25px rgba(123,92,255,0.4); cursor:pointer;
+  }
+  #powerBtn.on{box-shadow:0 0 45px rgba(123,92,255,0.85), 0 0 80px rgba(123,92,255,0.3); animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+
+  .slider-row{display:flex; flex-direction:column; gap:6px}
+  .slider-row label{font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--t3)}
+  .slider-row input[type=range]{width:100%; accent-color:var(--p)}
+
+  .footnote{text-align:center; font-size:10.5px; color:var(--t3); line-height:1.6; margin-top:18px}
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="brand">SPIRIT BOX · NYXIA</div>
+
+  <div class="dial-screen">
+    <div class="dial-track"><div class="dial-ticks"></div><div class="dial-needle" id="needle"></div></div>
+    <div class="freq-readout" id="freqReadout">88.0 MHz</div>
+  </div>
+
+  <div class="dial-screen">
+    <div class="fragment" id="fragment">— — —</div>
+    <div class="status" id="statusText">Éteint</div>
+  </div>
+
+  <div class="controls">
+    <div class="power-row"><button id="powerBtn" onclick="togglePower()">MARCHE</button></div>
+
+    <div class="slider-row">
+      <label>Volume du bruit</label>
+      <input type="range" id="noiseVol" min="0" max="100" value="18">
+    </div>
+    <div class="slider-row">
+      <label>Sensibilité (fréquence des fragments)</label>
+      <input type="range" id="sensitivity" min="1" max="10" value="5">
+    </div>
+  </div>
+
+  <p class="footnote">Bruit blanc synthétisé en direct + fragments captés dans la banque de mots — aucun flux radio externe utilisé.</p>
+</div>
+
+<script>
+(function(){
+  var token = new URLSearchParams(window.location.search).get('token') || '';
+  var audioCtx = null, noiseSource = null, gainNode = null, filterNode = null;
+  var isOn = false;
+  var fragmentTimer = null, sweepTimer = null;
+  var freq = 88.0;
+
+  var powerBtn = document.getElementById('powerBtn');
+  var statusText = document.getElementById('statusText');
+  var fragmentEl = document.getElementById('fragment');
+  var needle = document.getElementById('needle');
+  var freqReadout = document.getElementById('freqReadout');
+  var noiseVolInput = document.getElementById('noiseVol');
+  var sensitivityInput = document.getElementById('sensitivity');
+
+  function startAudio(){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var bufferSize = 2 * audioCtx.sampleRate;
+    var noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    var output = noiseBuffer.getChannelData(0);
+    for (var i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+    noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+
+    filterNode = audioCtx.createBiquadFilter();
+    filterNode.type = 'bandpass';
+    filterNode.frequency.value = 1200;
+    filterNode.Q.value = 0.6;
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = noiseVolInput.value / 300;
+
+    noiseSource.connect(filterNode).connect(gainNode).connect(audioCtx.destination);
+    noiseSource.start(0);
+  }
+
+  function stopAudio(){
+    if(noiseSource){ try{ noiseSource.stop(); }catch(e){} noiseSource = null; }
+    if(audioCtx){ audioCtx.close(); audioCtx = null; }
+  }
+
+  function sweepDial(){
+    freq += (Math.random() * 6 - 3);
+    if(freq < 87) freq = 87;
+    if(freq < 87 || freq > 108) freq = 88 + Math.random()*20;
+    var pct = ((freq - 87) / (108 - 87)) * 100;
+    needle.style.left = pct + '%';
+    freqReadout.textContent = freq.toFixed(1) + ' MHz';
+  }
+
+  var voices = [];
+  function loadVoices(){ voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
+  if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; }
+
+  function speakFragment(word){
+    if(!('speechSynthesis' in window)) return;
+    var frFr = voices.filter(function(v){ return v.lang && v.lang.toLowerCase() === 'fr-fr'; });
+    var utter = new SpeechSynthesisUtterance(word);
+    if(frFr[0]) utter.voice = frFr[0];
+    utter.lang = 'fr-FR';
+    utter.volume = 0.85;
+    utter.rate = 0.85 + Math.random()*0.3;
+    utter.pitch = 0.5 + Math.random()*0.6;
+    window.speechSynthesis.speak(utter);
+  }
+
+  function pullFragment(){
+    if(!isOn) return;
+    fetch('/api/ovilus/consult', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question:'', mode:'mots', token: token })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.response){
+        fragmentEl.textContent = data.response;
+        fragmentEl.classList.remove('lit'); void fragmentEl.offsetWidth; fragmentEl.classList.add('lit');
+        speakFragment(data.response);
+        setTimeout(function(){ fragmentEl.classList.remove('lit'); fragmentEl.textContent = '— — —'; }, 1800);
+      }
+    })
+    .catch(function(){});
+    scheduleNextFragment();
+  }
+
+  function scheduleNextFragment(){
+    if(fragmentTimer) clearTimeout(fragmentTimer);
+    var sensitivity = parseInt(sensitivityInput.value, 10); // 1 (rare) .. 10 (fréquent)
+    var baseDelay = 11000 - sensitivity * 900; // ~2s à ~10s
+    var delay = baseDelay + Math.random() * 2000;
+    fragmentTimer = setTimeout(pullFragment, delay);
+  }
+
+  function togglePower(){
+    isOn = !isOn;
+    powerBtn.classList.toggle('on', isOn);
+    powerBtn.textContent = isOn ? 'ARRÊT' : 'MARCHE';
+    statusText.textContent = isOn ? 'Balayage en cours…' : 'Éteint';
+    if(isOn){
+      startAudio();
+      sweepTimer = setInterval(sweepDial, 180);
+      scheduleNextFragment();
+    } else {
+      stopAudio();
+      if(sweepTimer) clearInterval(sweepTimer);
+      if(fragmentTimer) clearTimeout(fragmentTimer);
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      fragmentEl.textContent = '— — —';
+      fragmentEl.classList.remove('lit');
+    }
+  }
+
+  noiseVolInput.addEventListener('input', function(){
+    if(gainNode) gainNode.gain.value = noiseVolInput.value / 300;
+  });
+})();
+</script>
+</body>
+</html>
