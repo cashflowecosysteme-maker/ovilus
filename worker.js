@@ -56,7 +56,8 @@ Si le contexte fournit du contenu de référence (livres vibratoires, notions de
 };
 
 const CHAT_MODEL_FALLBACK = 'mistralai/mistral-small-3.2-24b-instruct';
-const OVILUS_MODEL_FALLBACK = 'anthropic/claude-3.7-sonnet';
+const OVILUS_MODEL_FALLBACK = 'mistralai/mistral-small-3.2-24b-instruct'; // même modèle déjà prouvé en production sur Gardienne
+const SAFE_MODEL = 'mistralai/mistral-small-3.2-24b-instruct'; // filet de sécurité si le modèle configuré échoue
 const SESSION_TTL = 60 * 60 * 24 * 7;
 const ADMIN_SESSION_TTL = 60 * 60 * 12;
 
@@ -408,23 +409,39 @@ async function handleOvilusConsult(request, env) {
   const systemPrompt = buildEntitePrompt(persona, pool);
   const model = (await env.SPIRITUEL_KV.get('config:ovilus_model')) || OVILUS_MODEL_FALLBACK;
 
-  const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://nyxiapublicationweb.com',
-      'X-Title': 'NyXia — Ovilus'
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: question }],
-      max_tokens: 120,
-      temperature: 0.95
-    })
-  });
+  async function callOpenRouter(modelToUse) {
+    return fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://nyxiapublicationweb.com',
+        'X-Title': 'NyXia — Ovilus'
+      },
+      body: JSON.stringify({
+        model: modelToUse,
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: question }],
+        max_tokens: 120,
+        temperature: 0.95
+      })
+    });
+  }
 
-  if (!resp.ok) return json({ error: 'Le voile est trouble, réessaie.' }, 502);
+  let resp = await callOpenRouter(model);
+
+  // Filet de sécurité RÉEL : si le modèle configuré échoue, on retente avec le modèle prouvé
+  // avant d'abandonner — la cliente ne voit jamais la première tentative ratée.
+  if (!resp.ok && model !== SAFE_MODEL) {
+    const firstErr = await resp.text();
+    console.log('Ovilus OpenRouter error avec modèle "' + model + '" (' + resp.status + '): ' + firstErr.slice(0, 500));
+    resp = await callOpenRouter(SAFE_MODEL);
+  }
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.log('Ovilus OpenRouter error (' + resp.status + '): ' + errText.slice(0, 500)); // visible uniquement dans tes logs Cloudflare, jamais à la cliente
+    return json({ error: 'Le voile est trouble, réessaie.' }, 502);
+  }
   const data = await resp.json();
   const content = data.choices?.[0]?.message?.content?.trim() || '…';
   return json({ response: content, mode: 'fluide' });
