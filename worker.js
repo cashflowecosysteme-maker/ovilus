@@ -423,7 +423,7 @@ async function handleOvilusConsult(request, env) {
       body: JSON.stringify({
         model: modelToUse,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: question }],
-        max_tokens: 120,
+        max_tokens: 220,
         temperature: 0.95
       })
     });
