@@ -482,9 +482,22 @@ function speakBrowser(text){
   window.speechSynthesis.cancel();
   var utter = new SpeechSynthesisUtterance(text);
   var voices = window.speechSynthesis.getVoices();
-  var fr = voices.find(function(v){ return v.lang && v.lang.toLowerCase().indexOf('fr') === 0; });
-  if(fr) utter.voice = fr;
+
+  // Uniquement fr-FR (France) — jamais fr-CA (Canadien/Québécois)
+  var frFr = voices.filter(function(v){ return v.lang && v.lang.toLowerCase() === 'fr-fr'; });
+
+  // Préférence pour une voix masculine parmi les fr-FR disponibles
+  var maleHints = ['thomas','paul','daniel','nicolas','antoine','henri','guillaume','male','homme'];
+  var picked = frFr.find(function(v){
+    var n = v.name.toLowerCase();
+    return maleHints.some(function(hint){ return n.indexOf(hint) !== -1; });
+  }) || frFr[0];
+
+  if(picked) utter.voice = picked;
   utter.lang = 'fr-FR';
+  if(!picked || !maleHints.some(function(hint){ return picked.name.toLowerCase().indexOf(hint) !== -1; })){
+    utter.pitch = 0.75; // aucune voix masculine identifiée par nom — grave le ton pour se rapprocher d'une voix d'homme
+  }
   window.speechSynthesis.speak(utter);
 }
 
