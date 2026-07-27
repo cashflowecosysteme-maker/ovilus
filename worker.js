@@ -61,7 +61,6 @@ const SESSION_TTL = 60 * 60 * 24 * 7;
 const ADMIN_SESSION_TTL = 60 * 60 * 12;
 
 // ───────────── VOIX — NyXia (ElevenLabs) + Léna (OpenAI) ─────────────
-const AGENT_ELEVENLABS_VOICE_ID_KEYS = { nyxia: 'ELEVENLABS_NYXIA_VOICE_ID' };
 const AGENT_VOICE_ID_KEYS = { nyxia: 'HEYGEN_NYXIA_VOICE_ID', lena: 'HEYGEN_LENA_VOICE_ID' };
 const OPENAI_VOICE_MAP = { lena: 'nova' };
 
@@ -292,28 +291,31 @@ async function handleTTS(request, env) {
   const sanitized = text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
   const cleanText = Array.from(sanitized).slice(0, 4500).join('');
 
-  // ── Voie 0 : ElevenLabs (priorité — normalement NyXia) ──
-  const elevenLabsVoiceIdKey = AGENT_ELEVENLABS_VOICE_ID_KEYS[agent];
-  const elevenLabsVoiceId = elevenLabsVoiceIdKey ? env[elevenLabsVoiceIdKey] : null;
-
-  if (elevenLabsVoiceId && env.ELEVENLABS_API_KEY) {
-    const cacheKey = 'tts_cache_elevenlabs:' + agent + ':' + (await sha256Hex(cleanText));
+  // ── NyXia : EXCLUSIVEMENT ElevenLabs — jamais de repli silencieux ──
+  if (agent === 'nyxia') {
+    const voiceId = env.ELEVENLABS_NYXIA_VOICE_ID;
+    if (!voiceId || !env.ELEVENLABS_API_KEY) {
+      return json({ error: 'ElevenLabs non configuré pour NyXia : il manque ' + (!voiceId ? 'ELEVENLABS_NYXIA_VOICE_ID' : 'ELEVENLABS_API_KEY') + ' dans les secrets Cloudflare.' }, 500);
+    }
+    const cacheKey = 'tts_cache_elevenlabs:nyxia:' + (await sha256Hex(cleanText));
     const cachedBuf = await env.SPIRITUEL_KV.get(cacheKey, 'arrayBuffer');
     if (cachedBuf) return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token), cached: true });
 
-    const resp = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + elevenLabsVoiceId, {
+    const resp = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
       method: 'POST',
       headers: { 'xi-api-key': env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: cleanText, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
     });
-    if (resp.ok) {
-      const audioBuf = await resp.arrayBuffer();
-      await env.SPIRITUEL_KV.put(cacheKey, audioBuf, { expirationTtl: 60 * 60 * 24 * 30 });
-      return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token) });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return json({ error: 'ElevenLabs a refusé la requête (code ' + resp.status + ') : ' + errText.slice(0, 400) }, 502);
     }
+    const audioBuf = await resp.arrayBuffer();
+    await env.SPIRITUEL_KV.put(cacheKey, audioBuf, { expirationTtl: 60 * 60 * 24 * 30 });
+    return json({ success: true, proxyUrl: '/api/tts/cached-audio?key=' + encodeURIComponent(cacheKey) + '&token=' + encodeURIComponent(token) });
   }
 
-  // ── Voie 1 : HeyGen ──
+  // ── Voie 1 : HeyGen (Léna et autres agents non-exclusifs) ──
   const voiceIdKey = AGENT_VOICE_ID_KEYS[agent];
   const heygenVoiceId = voiceIdKey ? env[voiceIdKey] : null;
   if (heygenVoiceId && env.HEYGEN_API_KEY) {
