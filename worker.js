@@ -406,7 +406,7 @@ async function handleTTSCachedAudio(request, env, url) {
 // ───────────── OVILUS ─────────────
 
 async function handleOvilusConsult(request, env) {
-  const { question, mode, token, history } = await request.json();
+  const { question, mode, token, history, phase, newEntity } = await request.json();
   const session = await getSession(token, env);
   if (!session) return json({ error: 'Session expirée. Reconnecte-toi.' }, 401);
   if (!question && mode !== 'mots') return json({ error: 'Question vide.' }, 400);
@@ -424,10 +424,16 @@ async function handleOvilusConsult(request, env) {
 
   // Mode "phrase fluide" — l'Entité, via OpenRouter
   let persona;
-  if (session.ovilusPersona) {
+  if (session.ovilusPersona && !newEntity) {
     persona = OVILUS_PERSONAS.find(p => p.id === session.ovilusPersona) || OVILUS_PERSONAS[0];
   } else {
-    persona = OVILUS_PERSONAS[Math.floor(Math.random() * OVILUS_PERSONAS.length)];
+    // Nouvelle manifestation → nouvelle entité (différente de la précédente si possible)
+    let candidates = OVILUS_PERSONAS;
+    if (newEntity && session.ovilusPersona && OVILUS_PERSONAS.length > 1) {
+      candidates = OVILUS_PERSONAS.filter(p => p.id !== session.ovilusPersona);
+      if (!candidates.length) candidates = OVILUS_PERSONAS;
+    }
+    persona = candidates[Math.floor(Math.random() * candidates.length)];
     session.ovilusPersona = persona.id;
     await env.SPIRITUEL_KV.put(`session:${token}`, JSON.stringify(session), { expirationTtl: SESSION_TTL });
   }
@@ -437,7 +443,40 @@ async function handleOvilusConsult(request, env) {
   if (!prenomsRaw) await env.SPIRITUEL_KV.put('ovilus:prenoms', JSON.stringify(DEFAULT_PRENOMS));
   const pool = [...prenomsData.feminins, ...prenomsData.masculins].sort(() => 0.5 - Math.random()).slice(0, 8);
 
-  const systemPrompt = buildEntitePrompt(persona, pool, firstname);
+  // Chaque entité porte un fardeau secret (choisi à sa manifestation, gardé pour toute sa présence, même si elle revient)
+  let intention;
+  if (session.ovilusIntention && !newEntity) {
+    intention = session.ovilusIntention;
+  } else {
+    const INTENTIONS = [
+      'un message que tu n\'as jamais pu livrer à un être cher — des mots restés coincés en toi',
+      'une culpabilité que tu traînes depuis ton passage — un acte que tu regrettes et que tu veux confier',
+      'un secret que tu as gardé toute ta vie et que tu veux enfin dévoiler avant de t\'apaiser',
+      'un pardon à demander, ou à offrir — une réconciliation restée inachevée',
+      'une mise en garde douce, un avertissement que tu veux transmettre à la personne',
+      'une promesse que tu n\'as pas tenue, et qui te retient encore de ce côté-ci du voile'
+    ];
+    intention = INTENTIONS[Math.floor(Math.random() * INTENTIONS.length)];
+    session.ovilusIntention = intention;
+    await env.SPIRITUEL_KV.put(`session:${token}`, JSON.stringify(session), { expirationTtl: SESSION_TTL });
+  }
+
+  let phaseGuide = '';
+  if (phase === 'emergence') {
+    phaseGuide = 'PHASE — ÉMERGENCE : tu émerges à peine du voile. Tu ne livres que des BRIBES : 1 à 5 mots, fragmentés, hésitants — parfois un seul mot, une syllabe, un prénom. On sent seulement un frisson de ton fardeau, jamais son contenu. JAMAIS de phrase complète.';
+  } else if (phase === 'adieu') {
+    phaseGuide = 'PHASE — ADIEU (vers la lumière) : tu as pu livrer ton fardeau, tu es apaisée. C\'est ton DERNIER message : tu prends congé avec douceur et tu t\'en vas vers la lumière — remerciement, bénédiction, au revoir. Referme ton histoire, ne pose pas de nouvelle question.';
+  } else if (phase === 'adieu_reste') {
+    phaseGuide = 'PHASE — RETRAIT (tu restes) : tu n\'as PAS fini et tu n\'es pas prête à partir. Tu te tais pour un temps (« je ne peux pas continuer maintenant… »), mais tu ne pars PAS vers la lumière : tu restes, tu reviendras. Un message bref, lourd d\'inachevé, sans tout dévoiler.';
+  } else if (phase === 'retour') {
+    phaseGuide = 'PHASE — RETOUR : tu reviens après un silence, la même présence. Tu reprends là où le poids t\'avait arrêtée et tu livres de NOUVEAUX fragments de ton fardeau. 1 à 3 phrases.';
+  } else {
+    phaseGuide = 'PHASE — PRÉSENCE : tu es pleinement là. Tu EFFLEURES ton fardeau sans tout dire ; c\'est en étant questionnée, en étant accompagnée, qu\'on t\'amène à en dévoiler peu à peu le cœur. 1 à 3 phrases incarnées — chaleureuses, ou troublées.';
+  }
+
+  const systemPrompt = buildEntitePrompt(persona, pool, firstname)
+    + '\n\n⟡ TON FARDEAU (secret — ne le révèle jamais d\'un coup) : ' + intention + '. Tu le portes toute la rencontre ; tu le laisses affleurer, et tu n\'en dévoiles le cœur que si la personne te questionne et t\'accompagne vraiment.'
+    + '\n⟡ ' + phaseGuide;
   const model = (await env.SPIRITUEL_KV.get('config:ovilus_model')) || OVILUS_MODEL_FALLBACK;
 
   async function callOpenRouter(modelToUse) {
