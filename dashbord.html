@@ -875,7 +875,26 @@ function unlockOvilusSpeech(){
 
 var ovilusHistory = [];
 
-var OVILUS_SILENCE_CHANCE = 0.18; // ~18% du temps, l'Entité ne répond pas
+var OVILUS_SILENCE_CHANCE = 0.18; // ~18% du temps, l'Entité ne répond pas (mode "mots")
+
+// ═══ Arc de session Ovilus (mode "phrase fluide") ═══
+var ovMsgCount = 0;
+var ovPhase = 'silence_initial';
+var ovSparseTick = 0;
+var ovEmergenceDone = 0;
+var ovPresenceDone = 0;
+var ovPresenceTarget = 20;
+var ovTransitionTick = 0;
+var ovDormantTick = 0;
+var ovManifestation = 0;
+var ovEndingType = 'lumiere';
+var ovPendingNewEntity = false;
+var OV_INITIAL_SILENCE = 10;    // aucune présence pendant les 10 premières questions
+var OV_EMERGENCE_RESPONSES = 3; // nb de bribes avant la présence
+var OV_EMERGENCE_RATIO = 3;     // 1 réponse sur 3 pendant l'émergence
+var OV_TRANSITION_SILENCE = 3;  // silences entre deux entités
+var OV_DORMANT_SILENCE = 4;     // silences quand une entité se retire et reviendra
+var OV_PONCTUAL_SILENCE = 0.18; // ~18% : l'entité présente refuse CETTE question précise
 
 function ovilusConsult(){
   if(ovilusBusy) return;
@@ -893,11 +912,83 @@ function ovilusConsult(){
   if(Math.random() < 0.22) thinkDelay += 3000 + Math.random() * 2000; // ~1 fois sur 5, l'entité hésite plus longtemps (jusqu'à ~9 s)
 
   setTimeout(function(){
-    // Silence radio — l'Entité choisit de ne pas répondre, aucun appel réseau, aucun coût.
-    if(Math.random() < OVILUS_SILENCE_CHANCE){
+    var phaseHint = 'presence', newEntity = false, silenceMsg = null;
+    var MUTES = ['Silence — elle n\'a rien voulu dire.', 'Elle se tait sur cette question.', 'Pas de réponse… ce fil reste scellé.', 'Elle détourne le voile… rien cette fois.'];
+    function randMute(){ return MUTES[Math.floor(Math.random() * MUTES.length)]; }
+
+    if(ovilusMode === 'fluide'){
+      // ── Arc de session Ovilus ──
+      ovMsgCount++;
+
+      if(ovPhase === 'silence_initial'){
+        silenceMsg = 'Aucune présence… le voile reste immobile.';
+        if(ovMsgCount >= OV_INITIAL_SILENCE){ ovPhase = 'emergence'; ovSparseTick = 0; ovEmergenceDone = 0; ovManifestation = 1; ovPendingNewEntity = true; }
+      }
+      else if(ovPhase === 'emergence'){
+        ovSparseTick++;
+        if(ovSparseTick % OV_EMERGENCE_RATIO !== 0){
+          silenceMsg = 'Quelque chose frémit… sans se dire encore.';
+        } else if(Math.random() < OV_PONCTUAL_SILENCE){
+          silenceMsg = randMute(); // mutisme ponctuel — n'avance pas l'arc
+        } else {
+          phaseHint = 'emergence';
+          newEntity = ovPendingNewEntity; ovPendingNewEntity = false;
+          ovEmergenceDone++;
+          if(ovEmergenceDone >= OV_EMERGENCE_RESPONSES){ ovPhase = 'presence'; ovPresenceDone = 0; ovPresenceTarget = 18 + Math.floor(Math.random() * 7); }
+        }
+      }
+      else if(ovPhase === 'presence'){
+        if(Math.random() < OV_PONCTUAL_SILENCE){
+          silenceMsg = randMute(); // elle refuse CETTE question — sans avancer vers la fin
+        } else {
+          ovPresenceDone++;
+          if(ovPresenceDone >= ovPresenceTarget){
+            var r = Math.random();
+            ovEndingType = (r < 0.34) ? 'lumiere' : (r < 0.78 ? 'reste' : 'brusque');
+            if(ovEndingType === 'brusque'){
+              silenceMsg = '⋯'; // coupée net, sans un mot
+              ovPhase = 'transition'; ovTransitionTick = 0;
+            } else if(ovEndingType === 'lumiere'){
+              phaseHint = 'adieu';                     // elle livre son fardeau et s'en va vers la lumière
+              ovPhase = 'transition'; ovTransitionTick = 0;
+            } else {
+              phaseHint = 'adieu_reste';               // elle se tait mais ne part pas — elle reviendra
+              ovPhase = 'dormant'; ovDormantTick = 0;
+            }
+          } else {
+            phaseHint = 'presence';
+          }
+        }
+      }
+      else if(ovPhase === 'dormant'){
+        ovDormantTick++;
+        if(ovDormantTick <= OV_DORMANT_SILENCE){
+          silenceMsg = 'Elle s\'est tue… mais elle est encore là, quelque part.';
+        } else {
+          ovPhase = 'presence'; ovPresenceDone = 0; ovPresenceTarget = 8 + Math.floor(Math.random() * 7);
+          phaseHint = 'retour'; newEntity = false;     // MÊME entité, de nouveaux fragments
+        }
+      }
+      else if(ovPhase === 'transition'){
+        ovTransitionTick++;
+        if(ovTransitionTick <= OV_TRANSITION_SILENCE){
+          if(ovTransitionTick === 1) silenceMsg = (ovEndingType === 'lumiere') ? 'Elle s\'en est allée vers la lumière…' : 'Le silence l\'a happée d\'un coup…';
+          else silenceMsg = 'Le vide reprend… une autre présence approche peut-être.';
+        } else {
+          ovPhase = 'emergence'; ovSparseTick = 0; ovEmergenceDone = 1; ovManifestation++;
+          ovilusHistory = [];
+          phaseHint = 'emergence'; newEntity = true;   // nouvelle entité
+        }
+      }
+    } else {
+      // Mode "mots" — petit silence aléatoire conservé (pas d'arc narratif)
+      if(Math.random() < OVILUS_SILENCE_CHANCE) silenceMsg = randMute();
+    }
+
+    if(silenceMsg){
       screen.textContent = '· · ·';
       screen.classList.remove('lit');
-      document.getElementById('ovilusStatus').textContent = 'Silence — elle n\'a rien voulu dire.';
+      document.getElementById('ovilusStatus').textContent = silenceMsg;
       ovilusLog('(silence)');
       ovilusBusy = false;
       return;
@@ -906,7 +997,7 @@ function ovilusConsult(){
     document.getElementById('ovilusStatus').textContent = 'Consultation…';
     fetch('/api/ovilus/consult', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ question: question, mode: ovilusMode, token: token, history: ovilusHistory })
+      body: JSON.stringify({ question: question, mode: ovilusMode, token: token, history: ovilusHistory, phase: phaseHint, newEntity: newEntity })
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
