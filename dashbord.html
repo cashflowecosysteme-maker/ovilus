@@ -210,11 +210,11 @@ header{position:relative;z-index:100;height:56px;flex-shrink:0;background:rgba(1
   <div class="sidebar" id="sidebar">
 
     <div class="sidebar-section">
-      <div class="sidebar-label">Mon Espace</div>
-      <div class="nav-item" id="nav-chat" onclick="openTab('nyxia')">
-        <span class="nav-icon">💜</span> Mes Conversations <span class="nav-arrow">›</span>
+      <div class="sidebar-label">Mes Conversations</div>
+      <div class="nav-item active" id="nav-diane" onclick="openTab('diane')">
+        <span class="nav-icon">🌸</span> Diane <span class="nav-arrow">›</span>
       </div>
-      <div class="nav-item active" id="nav-nyxia" onclick="openTab('nyxia')">
+      <div class="nav-item" id="nav-nyxia" onclick="openTab('nyxia')">
         <span class="nav-icon">✦</span> NyXia <span class="nav-arrow">›</span>
       </div>
       <div class="nav-item" id="nav-lena" onclick="openTab('lena')">
@@ -286,20 +286,20 @@ header{position:relative;z-index:100;height:56px;flex-shrink:0;background:rgba(1
 
   <div class="main">
     <!-- NyXia -->
-    <div class="panel active" id="panel-nyxia">
-      <div class="chat-header"><img src="/NyXia.png" alt=""><div><div class="name">NyXia</div><div class="sub">Ton accompagnatrice</div></div><button class="hdr-pdf" onclick="exportConversationPDF('nyxia')" title="Exporter toute la conversation en PDF">📄 PDF</button></div>
-      <div class="chat-messages" id="messages-nyxia"></div>
-      <div id="stage-nyxia" class="img-stage"></div>
-      <div class="chat-input-row">
-        <button id="btn-mic-nyxia" class="btn-mic" onclick="toggleMic('nyxia')" title="Parler">🎤</button>
-        <button class="btn-mic" onclick="pickImage('nyxia')" title="Envoyer une image">🖼️</button>
-        <input type="file" id="file-nyxia" accept="image/*" style="display:none" onchange="onImagePicked('nyxia', this)">
-        <input type="text" id="input-nyxia" placeholder="Écris à NyXia…">
-        <button class="btn-send" onclick="sendMessage('nyxia')">Envoyer</button>
+    <!-- Diane : page séparée (chat-diane.html) chargée en iframe -->
+    <div class="panel active" id="panel-diane" style="flex-direction:column">
+      <div style="flex:1;overflow:hidden;position:relative">
+        <iframe id="dianeFrame" src="" style="width:100%;height:100%;border:none;display:block" title="Diane"></iframe>
       </div>
     </div>
 
-    <!-- Léna -->
+    <!-- NyXia : page séparée (chat-nyxia.html) chargée en iframe -->
+    <div class="panel" id="panel-nyxia" style="flex-direction:column">
+      <div style="flex:1;overflow:hidden;position:relative">
+        <iframe id="nyxiaFrame" src="" style="width:100%;height:100%;border:none;display:block" title="NyXia"></iframe>
+      </div>
+    </div>
+
     <!-- Léna : page séparée (chat-lena.html) chargée en iframe -->
     <div class="panel" id="panel-lena" style="flex-direction:column">
       <div style="flex:1;overflow:hidden;position:relative">
@@ -469,10 +469,7 @@ function openTab(agent){
   document.getElementById('nav-' + agent).classList.add('active');
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
   document.getElementById('panel-' + agent).classList.add('active');
-  if(agent === 'nyxia' && chatHistories[agent] && chatHistories[agent].length === 0){
-    addMessage(agent, 'bot', greetings[agent]);
-  }
-  var LAZY_FRAMES = { lena: '/chat-lena.html', ovilus: '/ovilus.html', spiritbox: '/spiritbox.html', tarots: '/tarots.html', livres: '/livre.html', audios: '/livre-audio.html', spirituel: '/spirituel.html', numerologie: '/numerologie.html', runes: '/runes.html', journaux: '/journal.html' };
+  var LAZY_FRAMES = { diane: '/chat-diane.html', nyxia: '/chat-nyxia.html', lena: '/chat-lena.html', ovilus: '/ovilus.html', spiritbox: '/spiritbox.html', tarots: '/tarots.html', livres: '/livre.html', audios: '/livre-audio.html', spirituel: '/spirituel.html', numerologie: '/numerologie.html', runes: '/runes.html', journaux: '/journal.html' };
   if(LAZY_FRAMES[agent]){
     var frame = document.getElementById(agent + 'Frame');
     if(frame && (!frame.getAttribute('src') || frame.getAttribute('src') === '')){
@@ -757,14 +754,19 @@ function speakViaBrowser(btn, clean){
 }
 function escHtml(str){ var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-document.addEventListener('DOMContentLoaded', function(){ openTab('nyxia'); });
+document.addEventListener('DOMContentLoaded', function(){ openTab('diane'); });
 
 // Les pages (tirages, journal) peuvent lancer une conversation avec NyXia via postMessage
 window.addEventListener('message', function(e){
   var d = e.data;
   if(d && d.type === 'nyxia_suggest' && d.text){
+    var f = document.getElementById('nyxiaFrame');
+    var wasLoaded = f && f.getAttribute('src');
     openTab('nyxia');
-    sendMessageText('nyxia', String(d.text).slice(0, 1500));
+    var txt = String(d.text).slice(0, 1500);
+    setTimeout(function(){
+      try { document.getElementById('nyxiaFrame').contentWindow.postMessage({ type:'nyxia_prefill', text: txt }, '*'); } catch(err) {}
+    }, wasLoaded ? 200 : 900);
   }
   if(d && d.type === 'open_chat' && d.agent && document.getElementById('nav-' + d.agent)){
     openTab(d.agent);
